@@ -1,16 +1,19 @@
 -- TODO Go through all of the ffi calls
 --  and make sure their type sigs handle error conditions.
--- TODO Serialize/deserialize the state object
+-- TODO Disallow newlines and tabs in outline nodes.
+-- TODO Serialize/deserialize the entire state object
 -- TODO Store the state object inside a mutable JS string.
 
 module UI where
-import Prelude
+import Prelude hiding (intersperse, getText)
 import FFI
 import Lib
+
+-- FFI -------------------------------------------------------------------------
+data JS
+data JSCharCode
 data JSDOM
 
---------------------------------------------------------------------------------
--- FFI
 appendChild = ffi "((%1).appendChild(%2))":: JSDOM -> JSDOM -> Fay()
 gid = ffi "(document.getElementById(%1))":: String -> Fay(Nullable JSDOM)
 mknode = ffi "(document.createElement(%1))":: String -> Fay JSDOM
@@ -28,16 +31,13 @@ prompt = ffi "(prompt(%1,%2))":: String -> String -> Fay(Nullable String)
 getId = ffi "((%1).id)":: JSDOM -> Fay(Nullable String)
 onClick = ffi "((%1).onclick = (%2))":: JSDOM -> (Fay()) -> Fay()
 byClass = ffi "(document.getElementsByClassName(%1))":: String -> Fay [JSDOM]
-data JS
-data JSCharCode
 onKeyPress' = ffi "document.onkeypress = (%1)" :: (JS -> Fay()) -> Fay()
 keyCode = ffi "((%1).keyCode)" :: JS -> JSCharCode
 fromCharCode = ffi "(String.fromCharCode(%1))" :: JSCharCode -> String
 onKeyPress :: (String -> Fay()) -> Fay()
 onKeyPress p = onKeyPress' (p.fromCharCode.keyCode)
 
---------------------------------------------------------------------------------
--- DOM
+-- DOM -------------------------------------------------------------------------
 setAttrs n [] = return ()
 setAttrs n ((k,v):as) = setAttr n k v >> setAttrs n as
 appendChilds n cs = mapM (appendChild n) cs >> return()
@@ -62,8 +62,7 @@ walkdom p n = r n [] where
 		sequence $ zipWith (\i c -> r c (i:addr)) [0,1..] cs
 		return()
 
---------------------------------------------------------------------------------
--- Main
+-- Main ------------------------------------------------------------------------
 texteditor = do
 	addr <- getSelAddr
 	n <- gid(addrToId addr)
@@ -126,7 +125,7 @@ buildit = do
 
 mover :: ([Int] -> [Int]) -> Fay()
 mover p = do
-	a  <- getSelAddr
+	a <- getSelAddr
 	b <- return $ p a
 	n <- gid $ addrToId b
 	case n of
@@ -138,6 +137,9 @@ main = do
 	selAddr []
 	gendom(outline [] olj) >>= setPage.one
 	byClass "unselected" >>= iter setupclick
+	txt <- return $ showOutline olj
+	gendom (Node "pre" [] (Just txt) []) >>= writePage
+	gendom (outline [] (parse txt)) >>= writePage
 	onKeyPress $ \s -> case s of
 		"j" -> mover $ \a -> case a of {[]->[]; (b:bs)->(b+1):bs}
 		"h" -> mover $ \a -> case a of {[]->[]; (b:bs)->bs}
@@ -145,19 +147,3 @@ main = do
 		"k" -> mover $ \a -> case a of {[]->[]; (b:bs)->(b-1):bs}
 		"\r" -> texteditor
 		_ -> return()
-
---	document.onkeypress = function(e) {
---		var c = String.fromCharCode(e.keyCode);
---		if (c == "k") k_k();
---		else if (c == "j") k_j();
---		else if (c == "h") k_h();
---		else if (c == "l") k_l();
---		else if (c == "i") k_i();
---		else if (c == "\r") edit(); }
---		//else if (c == "a") { insertafter(selected()); select(nextsibling(selected())); }
---		//else if (c == "o") { openbelow(selected()); select(eldest(selected())); }
---		//else if (c == "d") { select(kill(selected())); }
---		//else if (c == "\r") { edit(selected()); }
---		//else if (c == "\n")  { edit(selected()); }
---		//else if (c == "\e")  { edit(selected()); }
---		//else if (e.keyCode == 27) edit(selected()); }
