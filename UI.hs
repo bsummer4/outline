@@ -13,10 +13,17 @@ import Util
 import OL
 import DOM
 
+-- Mutable Global Variables ----------------------------------------------------
+setSel (Addr is) = setVar "addr" $ concat $ myintersperse "," $ map show is
+getSel = getVar "addr" >>= return.addrread
+setOutline o = setVar "ol" $ olshow o
+getOutline = getVar "ol" >>= return.(olread)
+getState = do {s<-getSel; o<-getOutline; return(State s o)}
+setState(State a o) = setSel a >> setOutline o
+
 -- DOM -------------------------------------------------------------------------
 setAttrs n [] = return ()
 setAttrs n ((k,v):as) = setAttr n k v >> setAttrs n as
-appendChilds n cs = iter (appendChild n) cs
 getOutlineNode = gid "outline" >>= (\ol -> case ol of
 	Null -> error "There has to be a node with id=“outline” in the document."
 	Nullable node -> return node)
@@ -28,82 +35,71 @@ gendom (Node tag attrs txt childs) = do
 	n <- mknode tag
 	setAttrs n attrs
 	case txt of {Nothing->return (); Just s->setText n s}
-	mymapM gendom childs >>= appendChilds n
+	mymapM gendom childs >>= iter (appendChild n)
 	return n
 
 -- Main ------------------------------------------------------------------------
-replace :: Addr -> String -> OL -> OL
-replace i s ol = olreplace i s ol
+prompt' q d = do
+	x <- prompt q d
+	case x of {Null->prompt' q d; Nullable ""->return "#"; Nullable t->return t}
 
-chText :: Addr -> String -> Fay()
-chText addr txt = do
-	ol <- getOutline
-	alert $ olshow ol
-	setOutline $ replace addr txt ol
-	alert(olshow ol)
-	getVar "ol" >>= alert
-	buildit
+--select n = do
+--	id' <- getId n
+--	id <- return $ case id' of
+--		Null->error "Was expecting an ID, but didn't find one"
+--		Nullable i -> i
+--	addr <- return (idAddr id)
+--	setSel addr
+--	ol <- getOutline
+--	d <- gendom $ olDom addr ol
+--	setPage d
+--	setupClicks
+--	return()
 
-texteditor = do
-	addr <- getSel
-	n <- gid(addrId addr)
-	n <- return $ case n of
-		Null -> error "Invalid selection"
-		Nullable n -> n
-	txt <- getText n
-	p <- prompt "New text" txt
-	case p of {Null->texteditor; Nullable t->chText addr t}
+nodeAddr n = getId n >>= r where
+	r Null = error "Internal Error: Clickable node has invalid ID"
+	r (Nullable i) = return(idAddr i)
 
-select n = do
-	id' <- getId n
-	id <- return $ case id' of
-		Null->error "Was expecting an ID, but didn't find one"
-		Nullable i -> i
-	addr <- return (idAddr id)
-	setSel addr
-	d <- gendom $ olDom addr olexample
-	setPage d
-	setupClicks
-	return()
-
--- Mutable Variables
-setSel :: Addr -> Fay()
-setSel (Addr is) = setVar "addr" $ concat $ myintersperse "," $ map show is
-getSel :: Fay Addr
-getSel = getVar "addr" >>= return.addrread
-setOutline :: OL -> Fay()
-setOutline o = setVar "ol" $ olshow o
-getOutline :: Fay OL
-getOutline = getVar "ol" >>= return.(olread)
-
-mover p = do
-	a <- getSel
-	b <- return $ p a
-	n <- gid $ addrId b
-	case n of
-		Null -> return()
-		Nullable n -> do
-			setSel b >> buildit
+select n = nodeAddr n >>= setSel >> buildit
+editKey n k = do
+	t <- getText n
+	case k of
+		"h" -> return SelLeft
+		"l" -> return SelRight
+		"k" -> return SelUp
+		"j" -> return SelDown
+		"d" -> return Delete
+		"i" -> prompt' "Insert Before" "" >>= return.InsBefore
+		"a" -> prompt' "Insert After" "" >>= return.InsAfter
+		"o" -> prompt' "Insert Below" "" >>= return.InsBelow
+		"O" -> prompt' "Insert Above" "" >>= return.InsAbove
+		"\r" -> prompt' "Replace Text" t >>= return.InsAbove
+		_ -> return Nada
 
 setupclick e = onClick e $ select e
 setupClicks = byClass "unselected" >>= iter setupclick
-setupKeys = onKeyPress $ \s -> case s of
-	"j" -> mover $ \(Addr a) -> case a of {[]->Addr[]; b:bs->Addr((b+1):bs)}
-	"h" -> mover $ \(Addr a) -> case a of {[]->Addr[]; b:bs->Addr(bs)}
-	"l" -> mover $ \(Addr a) -> Addr(0:a)
-	"k" -> mover $ \(Addr a) -> case a of {[]->Addr[]; b:bs->Addr((b-1):bs)}
-	"\r" -> texteditor
-	_ -> return()
+setupKeys = onKeyPress r where
+	r k = do
+		a <- getSel
+		s <- getState
+		n' <- gid $ addrId a
+		n <- return $ case n' of {Null->error "bad addr"; Nullable z->z}
+		op <- editKey n k
+		setState $ apply op s
+		buildit
+
+fixAddr ol addr = if validSel addr ol then return addr else
+	setSel (Addr[]) >> return(Addr[])
 
 buildit = do
-	a <- getSel
 	ol <- getOutline
+	a <- getSel >>= fixAddr ol
 	gendom (olDom a ol) >>= setPage
 	byClass "unselected" >>= iter setupclick
 
 main = do
 	initVars
-	setSel (Addr[])
+	setSel $ Addr[]
 	setOutline olexample
 	buildit
 	setupKeys
