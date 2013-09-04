@@ -43,19 +43,6 @@ prompt' q d = do
 	x <- prompt q d
 	case x of {Null->prompt' q d; Nullable ""->return "#"; Nullable t->return t}
 
---select n = do
---	id' <- getId n
---	id <- return $ case id' of
---		Null->error "Was expecting an ID, but didn't find one"
---		Nullable i -> i
---	addr <- return (idAddr id)
---	setSel addr
---	ol <- getOutline
---	d <- gendom $ olDom addr ol
---	setPage d
---	setupClicks
---	return()
-
 nodeAddr n = getId n >>= r where
 	r Null = error "Internal Error: Clickable node has invalid ID"
 	r (Nullable i) = return(idAddr i)
@@ -73,11 +60,9 @@ editKey n k = do
 		"a" -> prompt' "Insert After" "" >>= return.InsAfter
 		"o" -> prompt' "Insert Below" "" >>= return.InsBelow
 		"O" -> prompt' "Insert Above" "" >>= return.InsAbove
-		"\r" -> prompt' "Replace Text" t >>= return.InsAbove
+		"\r" -> prompt' "Replace Text" t >>= return.Edit
 		_ -> return Nada
 
-setupclick e = onClick e $ select e
-setupClicks = byClass "unselected" >>= iter setupclick
 setupKeys = onKeyPress r where
 	r k = do
 		a <- getSel
@@ -91,11 +76,15 @@ setupKeys = onKeyPress r where
 fixAddr ol addr = if validSel addr ol then return addr else
 	setSel (Addr[]) >> return(Addr[])
 
+-- setupClick e = onClick e $ select e
+-- setupClicks = byClass "unselected" >>= iter setupClick
 buildit = do
 	ol <- getOutline
 	a <- getSel >>= fixAddr ol
 	gendom (olDom a ol) >>= setPage
-	byClass "unselected" >>= iter setupclick
+	byClass "unselected" >>= iter (\e -> onClick e (select e))
+	-- setupClicks
+	-- byClass "unselected" >>= iter setupClick
 
 main = do
 	initVars
