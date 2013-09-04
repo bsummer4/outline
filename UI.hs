@@ -2,7 +2,8 @@
 --  and make sure their type sigs handle error conditions.
 -- TODO Disallow newlines and tabs in outline nodes.
 -- TODO Serialize/deserialize the entire state object
--- TODO Store the state object inside a mutable JS string.
+-- TODO Store the state object inside a global JS string.
+-- TODO Get things working in google Hangouts.
 
 module UI where
 import Prelude hiding (intersperse, getText)
@@ -36,6 +37,12 @@ keyCode = ffi "((%1).keyCode)" :: JS -> JSCharCode
 fromCharCode = ffi "(String.fromCharCode(%1))" :: JSCharCode -> String
 onKeyPress :: (String -> Fay()) -> Fay()
 onKeyPress p = onKeyPress' (p.fromCharCode.keyCode)
+initVars = ffi "fayVars = {}" :: Fay()
+setVar = ffi "fayVars[%1] = %2" :: String -> String -> Fay()
+getVar' = ffi "(fayVars[%1])" :: String -> Fay (Defined String)
+getVar k = getVar' k >>= (\o -> case o of
+	{ Undefined -> error $ "unset variable ‘" ++ k ++ "’"
+	; Defined v -> return v})
 
 -- DOM -------------------------------------------------------------------------
 setAttrs n [] = return ()
@@ -59,19 +66,28 @@ walkdom p n = r n [] where
 	r n addr = do
 		p addr n
 		cs <- getChilds n
-		sequence $ zipWith (\i c -> r c (i:addr)) [0,1..] cs
+		sequence $ zipWith (\i c -> r c (i:addr)) ([0,1..] :: [Int]) cs
 		return()
 
 -- Main ------------------------------------------------------------------------
+chText :: [Int] -> String -> Fay()
+chText addr txt = do
+	ol <- getOutline
+	alert $ showOutline ol
+	setOutline $ replace addr txt ol
+	alert(showOutline ol)
+	getVar "ol" >>= alert
+	buildit
+
 texteditor = do
-	addr <- getSelAddr
+	addr <- getSel
 	n <- gid(addrToId addr)
 	n <- return $ case n of
 		Null -> error "Invalid selection"
 		Nullable n -> n
 	txt <- getText n
 	p <- prompt "New text" txt
-	case p of {Null->texteditor; Nullable t->setText n t}
+	case p of {Null->texteditor; Nullable t->chText addr t}
 
 x t = Node "p" [("align","center")] (Just t) []
 addrToId a = concat $ intersperse "," $ "olnode":(map show a)
@@ -84,7 +100,7 @@ idToAddr s = case (split s) of
 	"olnode":is -> map hi is
 	_ -> error "Invalid address encoded in a node's id"
 
-addrmap a f l = mapi (\i e -> f (i:a) e) l
+outline :: [Int] -> Outline -> DOM
 outline selection tree = top tree where
 	leaf a txt = Node "span" (attrs a) (Just txt) []
 	attrs a = if a==selection
@@ -92,13 +108,10 @@ outline selection tree = top tree where
 		else [("class","unselected"),("id",addrToId a)]
 	top (OLLeaf txt) = Node "p" [] Nothing [leaf [] txt]
 	top  (OLTree txt cs) = Node "p" [] Nothing [leaf [] txt,
-		Node "ul" [] Nothing (concat(addrmap [] r cs))]
+		Node "ul" [] Nothing (concat $ addrmap [] r cs)]
 	r a (OLLeaf txt) = [Node "li" [] Nothing [leaf a txt]]
 	r a (OLTree txt cs) = [Node "li" [] Nothing [leaf a txt],
 		Node "ul" [] Nothing (concat $ addrmap a r cs)]
-
-olj = OLTree "h" [OLLeaf "i", OLLeaf "j", OLTree "k"
-	[OLLeaf "hihihi there", OLTree "w" [OLLeaf "t", OLLeaf "f"]]]
 
 select n = do
 	id' <- getId n
@@ -106,44 +119,53 @@ select n = do
 		Null->error "Was expecting an ID, but didn't find one"
 		Nullable i -> i
 	addr <- return (idToAddr id)
-	selAddr addr
-	d <- gendom $ outline addr olj
+	setSel addr
+	d <- gendom $ outline addr testOutline
 	setPage [d]
 	setupClicks
 	return()
 
 setupclick e = onClick e $ select e
 setupClicks = byClass "unselected" >>= iter setupclick
-foo = byClass "unselected" >>= iter setupclick
+readI' s = case readI s of {Nothing->error "readI failed"; Just i->i}
 
-selAddr = ffi "selAddr = (%1)" :: [Int] -> Fay()
-getSelAddr = ffi "(selAddr)" :: Fay [Int]
+setSel :: [Int] -> Fay()
+setSel is = setVar "addr" $ concat $ intersperse "," $ map show is
+getSel :: Fay [Int]
+getSel = getVar "addr" >>= return . map readI' . split
+setOutline :: Outline -> Fay()
+setOutline o = setVar "ol" $ showOutline o
+getOutline :: Fay Outline
+getOutline = getVar "ol" >>= return.parse
+
 buildit = do
-	a <- getSelAddr
-	gendom(outline a olj) >>= setPage.one
+	a <- getSel
+	ol <- getOutline
+	gendom (outline a ol) >>= setPage.one
 	byClass "unselected" >>= iter setupclick
 
-mover :: ([Int] -> [Int]) -> Fay()
 mover p = do
-	a <- getSelAddr
+	a <- getSel
 	b <- return $ p a
 	n <- gid $ addrToId b
 	case n of
 		Null -> return()
 		Nullable n -> do
-			selAddr b >> buildit
+			setSel b >> buildit
 
 main = do
-	selAddr []
-	gendom(outline [] olj) >>= setPage.one
+	initVars
+	setSel []
+	setOutline testOutline
+	txt <- return $ showOutline testOutline
+	gendom(outline [] testOutline) >>= setPage.one
 	byClass "unselected" >>= iter setupclick
-	txt <- return $ showOutline olj
 	gendom (Node "pre" [] (Just txt) []) >>= writePage
 	gendom (outline [] (parse txt)) >>= writePage
 	onKeyPress $ \s -> case s of
 		"j" -> mover $ \a -> case a of {[]->[]; (b:bs)->(b+1):bs}
 		"h" -> mover $ \a -> case a of {[]->[]; (b:bs)->bs}
-		"l" -> mover $ \a -> 0:a
+		"l" -> mover $ \a -> (0::Int):a
 		"k" -> mover $ \a -> case a of {[]->[]; (b:bs)->(b-1):bs}
 		"\r" -> texteditor
 		_ -> return()

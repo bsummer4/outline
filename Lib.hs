@@ -4,12 +4,11 @@ import Prelude hiding (mapM, intersperse, lex)
 type Addr = [Int]
 data DOM = Node String [(String,String)] (Maybe String) [DOM]
 data Outline = OLTree String [Outline] | OLLeaf String
-	deriving Show
 data State = State Outline Addr
 data Err = InvalidAddress
-data Message
- = Select
- | InsBefore String
+data Message = Select Addr | Mutate Addr OLMutate
+data OLMutate
+ = InsBefore String
  | InsAfter String
  | InsBelow String
  | InsAbove String
@@ -27,6 +26,7 @@ one n = [n]
 mapM f l = sequence $ map f l
 iter f l = mapM f l >> return ()
 mapi f l = zipWith f [0..] l
+addrmap a f l = mapi (\i e -> f (i:a) e) l
 
 split1 "" = Nothing
 split1 cs = Just $ r [] cs where
@@ -92,3 +92,22 @@ dent acc o n cs = case compare n o of
 	GT -> if o+1/=n then err "dent" else pgetText (INDENT:acc) n "" cs
 	LT -> dent (DEDENT:acc) (o-1) n cs
 	EQ -> pgetText acc n "" cs
+
+--rightAbove (a:bs) cs = bs == cs
+--rightAbove _ _ = False
+mapOutline ol f = r [] ol where
+	descend addr (OLLeaf l) = (OLLeaf l)
+	descend addr (OLTree l subs) = (OLTree l $ addrmap addr r subs)
+	r addr n = case f addr n of
+		Nothing -> descend addr n
+		Just n -> n
+
+replace :: [Int] -> String -> Outline -> Outline
+replace addr txt n =
+	mapOutline n $ \a n -> if a/=addr then Nothing
+		else case n of
+			OLLeaf _ -> Just $ OLLeaf txt
+			OLTree _ subs -> Just $ OLTree txt subs
+
+testOutline = OLTree "h" [OLLeaf "i", OLLeaf "j", OLTree "k"
+	[OLLeaf "hihihi there", OLTree "w" [OLLeaf "t", OLLeaf "f"]]]
