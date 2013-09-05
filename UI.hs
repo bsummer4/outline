@@ -1,10 +1,3 @@
--- TODO Go through all of the ffi calls
---  and make sure their type sigs handle error conditions.
--- TODO Disallow newlines and tabs in outline nodes.
--- TODO Serialize/deserialize the entire state object
--- TODO Store the state object inside a global JS string.
--- TODO Get things working in google Hangouts.
-
 module UI where
 import Prelude hiding (intersperse, getText)
 import FFI
@@ -12,6 +5,7 @@ import JS
 import Util
 import OL
 import DOM
+import Edit
 
 -- Mutable Global Variables ----------------------------------------------------
 setSel (Addr is) = setVar "addr" $ concat $ myintersperse "," $ map show is
@@ -76,15 +70,11 @@ setupKeys = onKeyPress r where
 fixAddr ol addr = if validSel addr ol then return addr else
 	setSel (Addr[]) >> return(Addr[])
 
--- setupClick e = onClick e $ select e
--- setupClicks = byClass "unselected" >>= iter setupClick
 buildit = do
 	ol <- getOutline
 	a <- getSel >>= fixAddr ol
 	gendom (olDom a ol) >>= setPage
 	byClass "unselected" >>= iter (\e -> onClick e (select e))
-	-- setupClicks
-	-- byClass "unselected" >>= iter setupClick
 
 main = do
 	initVars

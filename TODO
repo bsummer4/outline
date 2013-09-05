@@ -1,0 +1,14 @@
+TODO Disallow newlines and tabs in outline nodes.
+TODO Serialize/deserialize the entire state object
+TODO Store the state object inside a global JS string.
+TODO Get things working in Google Hangouts.
+TODO Disallow newlines and tabs in outline nodes.
+TODO Get things working in Google Hangouts.
+TODO Go through all of the ffi calls
+	and make sure their type sigs handle error conditions.
+TODO Can I lean more heavily on the type system?
+	Outline Trees may not have 0 children.
+	Outline node strings may not contain newlines or tabs.
+
+TODO Make safe constructors for outlines
+	All trees must have >1 children

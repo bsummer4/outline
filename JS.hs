@@ -1,10 +1,3 @@
--- TODO Go through all of the ffi calls
---  and make sure their type sigs handle error conditions.
--- TODO Disallow newlines and tabs in outline nodes.
--- TODO Serialize/deserialize the entire state object
--- TODO Store the state object inside a global JS string.
--- TODO Get things working in google Hangouts.
-
 module JS where
 import Prelude
 import FFI
