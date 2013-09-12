@@ -50,11 +50,11 @@ editKey n k = do
 		"k" -> return SelUp
 		"j" -> return SelDown
 		"d" -> return Delete
-		"i" -> prompt' "Insert Before" "" >>= return.InsBefore
-		"a" -> prompt' "Insert After" "" >>= return.InsAfter
-		"o" -> prompt' "Insert Below" "" >>= return.InsBelow
-		"O" -> prompt' "Insert Above" "" >>= return.InsAbove
-		"\r" -> prompt' "Replace Text" t >>= return.Edit
+		"i" -> prompt' "Insert Before" "" >>= return . InsBefore . ols
+		"a" -> prompt' "Insert After" "" >>= return . InsAfter . ols
+		"o" -> prompt' "Insert Below" "" >>= return . InsBelow . ols
+		"O" -> prompt' "Insert Above" "" >>= return . InsAbove . ols
+		"\r" -> prompt' "Replace Text" t >>= return . Edit . ols
 		_ -> return Nada
 
 setupKeys = onKeyPress r where
