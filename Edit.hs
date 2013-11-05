@@ -9,6 +9,13 @@ data Mut
 	| Edit OLStr | Delete | Nada
 	| InsBefore OLStr | InsAfter OLStr | InsAbove OLStr | InsBelow OLStr
 
+getNode :: State -> OLStr
+getNode (State (Addr a) ol) = r (reverse a) ol where
+	r [] (OL s _) = s
+	r _ (OL _ []) = error "invalid selection"
+	r (a:as) (OL _ sub) =
+		if or[a>=length sub,a<0] then error "invalid selection" else r as (sub!!a)
+
 olinsertAt (Addr addr) txt n = olmapAddr f n where
 	f (Addr a) n = case addr `isChildOf` a of
 		Nothing -> Nothing

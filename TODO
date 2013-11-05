@@ -2,20 +2,9 @@
 TODO Move all the editing logic and keybindings into Edit.hs
 TODO Add a command-line driver.
 TODO Add extensive QuickCheck testing.
-TODO Get things working in Google Hangouts.
-TODO Add a plain-text view of the data in a <pre> tag.
-TODO Clipboard with the ‘pyd’ keys.
-	Not feasible to merge it with the system clipboard.
+TODO Add a copy-cut-paste with the ‘pyx’ keys.
 TODO Add some operations.
-	Support ‘cancel’ on prompts.
-	Delete node and splice children.
 	Better handling of special cases having to do with
 		the top-level node.
 			Maybe support an invisible top-level node to avoid
 				special cases in editing operations.
-
-## Javascript
-TODO Experiment with using GHCJS instead of Fay.
-	Fay's bugs and missing features are very annoying.
-
-TODO Make sure all ffi calls handle all error conditions.
