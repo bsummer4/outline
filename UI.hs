@@ -1,6 +1,5 @@
 module UI where
-import Prelude hiding (intersperse, getText)
-import FFI
+import Prelude
 import JS
 import Util
 import OL

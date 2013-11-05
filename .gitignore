@@ -1,4 +1,6 @@
-*.hi
+tmp/
 *.js
 *.swp
-Lib.o
+*.hi
+*.o
+o.*

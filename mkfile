@@ -1,15 +1,9 @@
-all:V: UI.js CL Test
-clean:V: UI.js
-	rm -f *.o Test CL *.hi
+all:V: UI.html o.CL
+clean:V:
+	rm -f *.grin *.core *.o o.* *.hi *.html *.js *.mjs *.map
 
-test:V: Test
-	./Test
+o.%: %.hs
+	ghc -hidir tmp -odir tmp -main-is $stem.main $stem.hs -o o.$stem
 
-UI.js: UI.hs JS.hs Util.hs OL.hs DOM.hs Edit.hs
-	fay -p UI.hs
-
-Test: Test.hs Util.hs OL.hs DOM.hs Edit.hs
-	ghc Test
-
-CL: Util.hs OL.hs DOM.hs CL.hs Edit.hs
-	ghc CL
+o.Test: Test.hs Util.hs OL.hs DOM.hs Edit.hs
+o.CL: CL.hs Util.hs OL.hs DOM.hs Edit.hs

@@ -1,14 +1,21 @@
-TODO Disallow newlines and tabs in outline nodes.
-TODO Serialize/deserialize the entire state object
-TODO Store the state object inside a global JS string.
+# TODOs
+TODO Move all the editing logic and keybindings into Edit.hs
+TODO Add a command-line driver.
+TODO Add extensive QuickCheck testing.
 TODO Get things working in Google Hangouts.
-TODO Disallow newlines and tabs in outline nodes.
-TODO Get things working in Google Hangouts.
-TODO Go through all of the ffi calls
-	and make sure their type sigs handle error conditions.
-TODO Can I lean more heavily on the type system?
-	Outline Trees may not have 0 children.
-	Outline node strings may not contain newlines or tabs.
+TODO Add a plain-text view of the data in a <pre> tag.
+TODO Clipboard with the ‘pyd’ keys.
+	Not feasible to merge it with the system clipboard.
+TODO Add some operations.
+	Support ‘cancel’ on prompts.
+	Delete node and splice children.
+	Better handling of special cases having to do with
+		the top-level node.
+			Maybe support an invisible top-level node to avoid
+				special cases in editing operations.
 
-TODO Make safe constructors for outlines
-	All trees must have >1 children
+## Javascript
+TODO Experiment with using GHCJS instead of Fay.
+	Fay's bugs and missing features are very annoying.
+
+TODO Make sure all ffi calls handle all error conditions.

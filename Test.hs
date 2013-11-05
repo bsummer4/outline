@@ -1,3 +1,4 @@
+module Test where
 import Test.QuickCheck
 import Data.List
 import OL

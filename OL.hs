@@ -1,7 +1,10 @@
 module OL
-	(Addr(Addr),OLStr,OL(OL),olmap,olread,olshow,ols,unols,olexample
-	,addrshow,addrread,addrmap,olmapAddr,isChildOf
+	( OLStr, ols, unols
+	, OL(OL), olmap, olread, olshow, olexample
+	, Addr(Addr), addrshow, addrread, addrmap
+	, olmapAddr, isChildOf
 	) where
+
 import Prelude
 import Util
 
@@ -9,9 +12,15 @@ data Addr = Addr [Int] deriving (Eq,Show)
 data OLStr = OLStr String deriving Show
 data OL = OL OLStr [OL] deriving Show
 data Lexeme = INDENT | DEDENT | LINE OLStr deriving Show
+trim s = map untab $ reverse $ unf $ reverse $ unf s -- where
+unf "" = ""
+unf (' ':s) = unf s
+unf ('\t':s) = unf s
+unf s = s
+untab '\t' = ' '
+untab x = x
 
-okols s = not $ or[elem ' ' s, elem '\t' s, null s]
-ols s = if okols s then OLStr s else error "Invalid outline string"
+ols s = OLStr $ case trim s of {[]->"#"; ts->ts}
 unols (OLStr s) = s
 α = ols
 ol t s = OL (α t) s
@@ -55,17 +64,19 @@ dent acc o n cs = case compare n o of
 	LT -> dent (DEDENT:acc) (o-1) n cs
 	EQ -> pgetText acc n "" cs
 
-olmap f ol = case f ol of {Just ol'->ol'; Nothing->descend f ol}
+olmap f ol = case f ol of {Just ol'->ol'; Nothing->descend f ol} -- where
 descend f (OL l []) = (OL l [])
 descend f (OL l subs) = OL l $ map (olmap f) subs
-olmapAddr f ol = olmapAddr' f (Addr[]) ol
+
+olmapAddr f ol = olmapAddr' f (Addr[]) ol -- where
 olmapAddr' f a ol = case f a ol of {Just ol'->ol'; Nothing->descendAddr f a ol}
 descendAddr f addr (OL l []) = (OL l [])
 descendAddr f addr (OL l subs) = OL l $ addrmap addr (olmapAddr' f) subs
 ns (OL s []) = s
 ns (OL s _) = s
-isChildOf a b = isChildOf' (reverse a) (reverse b)
-isChildOf' [] _ = Nothing
-isChildOf' [i] [] = Just i
-isChildOf' _ [] = Nothing
-isChildOf' (a:as) (b:bs) = if (a==b) then isChildOf' as bs else Nothing
+
+isChildOf a b = arr (reverse a) (reverse b) -- where
+arr [] _ = Nothing
+arr [i] [] = Just i
+arr _ [] = Nothing
+arr (a:as) (b:bs) = if (a==b) then arr as bs else Nothing
