@@ -51,10 +51,11 @@ editKey n k = do
 		"k" -> return SelUp
 		"j" -> return SelDown
 		"d" -> return Delete
-		"i" -> prompt' "Insert Before" "" >>= return . InsBefore . ols
-		"a" -> prompt' "Insert After" "" >>= return . InsAfter . ols
-		"o" -> prompt' "Insert Below" "" >>= return . InsBelow . ols
-		"O" -> prompt' "Insert Above" "" >>= return . InsAbove . ols
+		"i" -> return $ InsBefore $ ols ""
+		"a" -> return $ InsAfter $ ols ""
+		"o" -> return $ InsBelow $ ols ""
+		"O" -> return $ InsAbove $ ols ""
+		"r" -> prompt' "Replace Text" t >>= return . Edit . ols
 		"\r" -> prompt' "Replace Text" t >>= return . Edit . ols
 		_ -> return Nada
 

@@ -8,5 +8,3 @@ TODO Add some operations.
 TODO Get things working in Google Hangouts.
 TODO Use JQuery.
 TODO You should be able to cancel top-level editing operations.
-TODO Don't popup a dialog for invalid editing operations.
-	For example, you can't append to the top-level node.
