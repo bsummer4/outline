@@ -29,10 +29,10 @@ addrmap (Addr a) f l = mapi (\i e -> f (Addr(i:a)) e) l
 addrshow (Addr a) = comma $ map show a
 addrread s = Addr $ map parseInt' $ uncomma s
 
-olshow n = urr (0::Int) n ++ "\n" where
+olshow n = r (0::Int) n ++ "\n" where
 	join = concat . myintersperse "\n"
-	urr d (OL (OLStr s) []) = indent d ++ s
-	urr d (OL (OLStr s) cs) = join $ (indent d ++ s):(map (urr(d+1)) cs)
+	r d (OL (OLStr s) []) = indent d ++ s
+	r d (OL (OLStr s) cs) = join $ (indent d ++ s):(map (r(d+1)) cs)
 	indent 0 = ""
 	indent n = if n<0 then error "Bad Logic in ‘indent’" else "\t" ++ indent(n-1)
 

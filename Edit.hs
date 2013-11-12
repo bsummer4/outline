@@ -67,7 +67,7 @@ apply op s@(State a o) = case op of
 	Nada -> s
 	Delete -> del a o
 	Edit t -> State a $ olreplace a t o
-	Select a -> moveTo a s
+	Select a' -> moveTo a' s
 	SelDown -> moveTo (down a) (State a o)
 	SelUp -> moveTo (up a) (State a o)
 	SelLeft -> moveTo (left a) (State a o)
