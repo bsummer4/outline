@@ -1,10 +1,21 @@
 # Internal
-TODO Move all the editing logic and keybindings into Edit.hs
 TODO Add extensive QuickCheck testing.
 TODO Add a copy-cut-paste with the ‘pyx’ keys.
 TODO Add some operations.
+TODO Support Editing history and undo's
+TODO Support image/video nodes (through links).
+TODO Add movement operations.
+	Move backwards and forwards.
+	Swap with parent.
+	Become the last child of the predecsor-sibling node.
+	Become the next of the parent node.
 
 # Web Frontend
 TODO Get things working in Google Hangouts.
 TODO Use JQuery.
 TODO You should be able to cancel top-level editing operations.
+
+# Website
+Make a website where you can edit these outline documents.
+Blog publishing.
+Colaborative editing.
