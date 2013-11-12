@@ -34,9 +34,9 @@ gendom (Node tag attrs txt childs) = do
 
 
 -- Main ------------------------------------------------------------------------
-prompt' q d = do
-	x <- prompt q d
-	case x of {Null->prompt' q d; Nullable ""->return "#"; Nullable t->return t}
+prompt' q default' = do
+	x <- prompt q default'
+	case x of {Null->return default'; Nullable t->return t}
 
 nodeAddr n = getId n >>= r where
 	r Null = error "Internal Error: Clickable node has invalid ID"
