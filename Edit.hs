@@ -9,6 +9,16 @@ data Mut
 	| Edit OLStr | Delete | Nada
 	| InsBefore OLStr | InsAfter OLStr | InsAbove OLStr | InsBelow OLStr
 
+-- Fixes a potentially invalid address.
+fudgeAddr :: State -> State
+fudgeAddr (State (Addr a) ol) = State(Addr$reverse$fudge(reverse a) ol) ol where
+	fudge [] (OL s _) = []
+	fudge _ (OL _ []) = []
+	fudge (a:as) (OL s sub) =
+		if a<0 then error "there is a bug in fudgeAddr." else
+		if a>=length sub then fudge (a-1:as) (OL s sub) else
+		a:fudge as (sub!!a)
+
 getNode :: State -> OLStr
 getNode (State (Addr a) ol) = r (reverse a) ol where
 	r [] (OL s _) = s
@@ -58,9 +68,7 @@ insBelow t a o = apply SelRight $ State a $ olreplaceAt a r o where
 	r (OL l []) = Just $ OL l [OL t []]
 	r (OL l cs) = Just $ OL l ((OL t []):cs)
 
-del a o = State (m a) $ olreplaceAt a (\_ -> Nothing) o where
-	m (Addr[]) = Addr[]
-	m (Addr(a:as)) = Addr as
+del a o = fudgeAddr $ State a $ olreplaceAt a (\_ -> Nothing) o
 
 applies muts s = foldl (flip apply) s muts
 apply op s@(State a o) = case op of
