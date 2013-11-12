@@ -1,9 +1,11 @@
+faylibs = --package fay-ref
+
 all:V: o.CL o.Test o.Sanitize UI.js
 clean:V:
 	rm -f *.grin *.core *.o o.* *.hi *.html *.js *.mjs *.map
 
 %.js: %.hs
-	fay $stem.hs
+	fay $faylibs $stem.hs
 
 o.%: %.hs
 	ghc -hidir tmp -odir tmp -main-is $stem.main $stem.hs -o o.$stem

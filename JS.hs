@@ -48,13 +48,3 @@ fromCharCode :: JSCharCode -> String
 fromCharCode = ffi "(String.fromCharCode(%1))"
 onKeyPress :: (String -> Fay()) -> Fay()
 onKeyPress p = onKeyPress' (p.fromCharCode.keyCode)
-initVars :: Fay()
-initVars = ffi "fayVars = {}"
-setVar :: String -> String -> Fay()
-setVar = ffi "fayVars[%1] = %2"
-getVar' :: String -> Fay (Defined String)
-getVar' = ffi "(fayVars[%1])"
-getVar :: String -> Fay(String)
-getVar k = getVar' k >>= (\o -> case o of
-	{ Undefined -> error $ "unset variable ‘" ++ k ++ "’"
-	; Defined v -> return v})

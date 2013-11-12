@@ -6,14 +6,15 @@ import Util
 import OL
 import DOM
 import Edit
+import FayRef
 
--- Mutable Global Variables ----------------------------------------------------
-setSel (Addr is) = setVar "addr" $ concat $ myintersperse "," $ map show is
-getSel = getVar "addr" >>= return.addrread
-setOutline o = setVar "ol" $ olshow o
-getOutline = getVar "ol" >>= return.(olread)
-getState = do {s<-getSel; o<-getOutline; return(State s o)}
-setState(State a o) = setSel a >> setOutline o
+-- Manipulate the State Variable -----------------------------------------------
+setSel st a = modifyFayRef st (\(State _ o) -> State a o)
+getSel st = readFayRef st >>= (\(State a _) -> return a)
+setOutline st o = modifyFayRef st (\(State a _) -> State a o)
+getOutline st = readFayRef st >>= (\(State _ o) -> return o)
+getState st = readFayRef st
+setState st state = modifyFayRef st (\_ -> state)
 
 -- DOM -------------------------------------------------------------------------
 setAttrs n [] = return ()
@@ -32,7 +33,6 @@ gendom (Node tag attrs txt childs) = do
 	mymapM gendom childs >>= iter (appendChild n)
 	return n
 
-
 -- Main ------------------------------------------------------------------------
 prompt' q default' = do
 	x <- prompt q default'
@@ -42,7 +42,7 @@ nodeAddr n = getId n >>= r where
 	r Null = error "Internal Error: Clickable node has invalid ID"
 	r (Nullable i) = return(idAddr i)
 
-select n = nodeAddr n >>= setSel >> buildit
+select st n = nodeAddr n >>= setSel st >> buildit st
 editKey n k = do
 	t <- getText n
 	case k of
@@ -59,31 +59,30 @@ editKey n k = do
 		"\r" -> prompt' "Replace Text" t >>= return . Edit . ols
 		_ -> return Nada
 
-setupKeys = onKeyPress r where
+setupKeys st = onKeyPress r where
 	dumpText t = gendom payload >>= writePage where
 		payload = Node "pre" [] (Just $ t++"\n") []
-	r "!" = getState >>= (\(State a ol) -> dumpText$olshow$ol)
+	r "!" = getState st >>= (\(State a ol) -> dumpText$olshow$ol)
 	r k = do
-		a <- getSel
-		s <- getState
+		a <- getSel st
+		s <- getState st
 		n' <- gid $ addrId a
 		n <- return $ case n' of {Null->error "bad addr"; Nullable z->z}
 		op <- editKey n k
-		setState $ apply op s
-		buildit
+		setState st $ apply op s
+		buildit st
 
-fixAddr ol addr = if validSel addr ol then return addr else
-	setSel (Addr[]) >> return(Addr[])
+fixAddr st = readFayRef st >>= \(State a o) ->
+	if validSel a o then return() else
+		modifyFayRef st (\(State a o) -> State (Addr[]) o)
 
-buildit = do
-	ol <- getOutline
-	a <- getSel >>= fixAddr ol
-	gendom (olDom a ol) >>= setPage
-	byClass "unselected" >>= iter (\e -> onClick e (select e))
+buildit st = do
+	fixAddr st
+	State a ol <- readFayRef st
+	gendom(olDom a ol) >>= setPage
+	byClass "unselected" >>= iter (\e -> onClick e (select st e))
 
 main = do
-	initVars
-	setSel $ Addr[]
-	setOutline olexample
-	buildit
-	setupKeys
+	state <- newFayRef $ State (Addr[]) olexample
+	buildit state
+	setupKeys state
