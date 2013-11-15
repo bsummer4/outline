@@ -8,8 +8,8 @@ module OL
 import Prelude
 import Util
 data Addr = Addr [Int] deriving (Eq,Show)
-data OLStr = OLStr String deriving Show
-data OL = OL OLStr [OL] deriving Show
+data OLStr = OLStr String deriving (Eq,Show)
+data OL = OL OLStr [OL] deriving (Eq,Show)
 data Lexeme = INDENT | DEDENT | LINE OLStr deriving Show
 trim s = map untab $ reverse $ unf $ reverse $ unf s where
 	unf "" = ""

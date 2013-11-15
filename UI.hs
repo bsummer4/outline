@@ -7,6 +7,7 @@ import OL
 import DOM
 import Edit
 import FayRef
+import PrimEdit
 
 -- Manipulate the State Variable -----------------------------------------------
 setSel st a = modifyFayRef st (\(State _ o) -> State a o)
