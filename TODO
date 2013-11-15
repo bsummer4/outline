@@ -8,7 +8,8 @@ TODO Add movement operations.
 	Move backwards and forwards.
 	Swap with parent.
 	Become the last child of the predecsor-sibling node.
-	Become the next of the parent node.
+	Make a node the next child of the parent node.
+	Move a node left and right without changing the vertical position.
 
 # Web Frontend
 TODO Get things working in Google Hangouts.
