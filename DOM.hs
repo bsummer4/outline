@@ -1,11 +1,14 @@
 module DOM where
 import Prelude
 import OL
-import Util
+import Util (prefix)
 
 data DOM = Node String [(String,String)] (Maybe String) [DOM]
 
+addrId :: Addr -> String
 addrId a = "olnode" ++ addrshow a
+
+idAddr :: String -> Addr
 idAddr s = if not(prefix "olnode" s) then error "bad id" else addrread(drop 6 s)
 
 olDom :: Addr -> OL -> DOM

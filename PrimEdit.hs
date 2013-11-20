@@ -37,7 +37,7 @@ insert [] n e = [e] -- If the index is bad, insert at the end.
 insert (a:as) n e = a:insert as (n-1) e
 
 get :: Addr → OL → OL
-get (Addr a) ol = r (reverse a) ol where
+get (Addr addr) ol = r (reverse addr) ol where
 	r [] o@(OL s _) = o
 	r _ (OL _ []) = error "invalid address"
 	r (a:as) (OL _ sub) =
@@ -54,16 +54,16 @@ lwalk f l = r 0 l where
 		Replace a -> a:r (i+1) xs
 
 walk :: (Addr → OL → WalkOp OL) → OL → OL
-walk f ol = foo $ r (Addr[]) ol where
-	addrmap (Addr a) f l = lwalk (\i e -> f (Addr(i:a)) e) l
+walk f outline = foo $ r (Addr[]) outline where
+	amap (Addr a) l = lwalk (\i e -> r (Addr(i:a)) e) l
 	foo (Replace x) = x
 	foo Delete = (OL (ols "") [])
 	foo Descend = error "this will never happen"
-	descendAddr addr (OL l subs) = OL l $ addrmap addr r subs
+	descendAddr addr (OL l subs) = OL l $ amap addr subs
 	r a ol = case f a ol of
 		Delete -> Delete
 		Descend -> Replace $ descendAddr a ol
-		Replace r -> Replace r
+		Replace newNode -> Replace newNode
 
 -- Operations and Their Inverses ----------------------------------------------
 undo :: OL → PrimEdit → PrimEdit
@@ -91,7 +91,7 @@ add outline (Addr (addAt@(loc:_)))  frag = walk f outline where
 		Nothing -> Descend
 		Just idx -> Replace $ OL s $ insert childs idx frag
 
-validSel (Addr a) ol = r (reverse a) ol where
+validSel (Addr addr) ol = r (reverse addr) ol where
 	r [] _ = True
 	r _ (OL _ []) = False
 	r (a:as) (OL _ sub) =

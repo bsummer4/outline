@@ -11,7 +11,13 @@ data Addr = Addr [Int] deriving (Eq,Show)
 data OLStr = OLStr String deriving (Eq,Show)
 data OL = OL OLStr [OL] deriving (Eq,Show)
 data Lexeme = INDENT | DEDENT | LINE OLStr deriving Show
-trim s = map untab $ reverse $ unf $ reverse $ unf s where
+
+unols :: OLStr -> String
+unols (OLStr s) = s
+
+ols :: String -> OLStr
+ols str = OLStr $ case trim str of {[]->"#"; ts->ts} where
+	trim s = map untab $ reverse $ unf $ reverse $ unf s
 	unf "" = ""
 	unf (' ':s) = unf s
 	unf ('\t':s) = unf s
@@ -19,17 +25,17 @@ trim s = map untab $ reverse $ unf $ reverse $ unf s where
 	untab '\t' = ' '
 	untab x = x
 
-ols s = OLStr $ case trim s of {[]->"#"; ts->ts}
-unols (OLStr s) = s
-α = ols
-ol t s = OL (α t) s
-l t = OL (α t) []
+olexample :: OL
 olexample = ol "h" [l "i",l "j",ol "k" [l "hihihi there",ol "w" [l "t",l "f"]]]
+	where
+		ol t s = OL (ols t) s
+		l t = OL (ols t) []
+
 addrmap (Addr a) f l = mapi (\i e -> f (Addr(i:a)) e) l
 addrshow (Addr a) = comma $ map show a
 addrread s = Addr $ map parseInt' $ uncomma s
 
-olshow n = r (0::Int) n ++ "\n" where
+olshow node = r (0::Int) node ++ "\n" where
 	join = concat . myintersperse "\n"
 	r d (OL (OLStr s) []) = indent d ++ s
 	r d (OL (OLStr s) cs) = join $ (indent d ++ s):(map (r(d+1)) cs)
@@ -50,9 +56,9 @@ olread = finalize . ppp . reorder . ollex where
 	ollex s = getIndent [] (0::Int) (0::Int) s
 	getIndent acc pr count ('\t':cs) = getIndent acc pr (count+1) cs
 	getIndent acc pr count cs = dent acc pr count cs
-	pgetText acc pr [] [] = reverse acc
-	pgetText acc pr [] "\n" = reverse acc
-	pgetText acc pr str [] = reverse ((LINE $ ols $ reverse str):acc)
+	pgetText acc _ [] [] = reverse acc
+	pgetText acc _ [] "\n" = reverse acc
+	pgetText acc _ str [] = reverse ((LINE $ ols $ reverse str):acc)
 	pgetText acc pr str ('\n':cs) = getIndent ((LINE$ols$reverse str):acc) pr 0 cs
 	pgetText acc pr str (c:cs) = pgetText acc pr (c:str) cs
 	overdent = "too much indentation"
@@ -61,18 +67,17 @@ olread = finalize . ppp . reorder . ollex where
 		LT -> dent (DEDENT:acc) (o-1) n cs
 		EQ -> pgetText acc n "" cs
 
-olmap f ol = case f ol of {Just ol'->ol'; Nothing->descend f ol} where
-	descend f (OL l []) = (OL l [])
-	descend f (OL l subs) = OL l $ map (olmap f) subs
+olmap f ol = case f ol of {Just ol'->ol'; Nothing->descend ol} where
+	descend (OL l []) = (OL l [])
+	descend (OL l subs) = OL l $ map (olmap f) subs
 
-olmapAddr f ol = olmapAddr' f (Addr[]) ol where
-	olmapAddr' f a ol = case f a ol of {Just ol'->ol'; Nothing->descendAddr f a ol}
-	descendAddr f addr (OL l []) = (OL l [])
-	descendAddr f addr (OL l subs) = OL l $ addrmap addr (olmapAddr' f) subs
-	ns (OL s []) = s
-	ns (OL s _) = s
+olmapAddr f outline = olmapAddr' (Addr[]) outline where
+	olmapAddr' a ol = case f a ol of {Just ol'->ol'; Nothing->descendAddr a ol}
+	descendAddr _ (OL l []) = (OL l [])
+	descendAddr addr (OL l subs) = OL l $ addrmap addr olmapAddr' subs
 
-isChildOf a b = arr (reverse a) (reverse b) where
+isChildOf :: [Int] -> [Int] -> Maybe Int
+isChildOf parent child = arr (reverse parent) (reverse child) where
 	arr [] _ = Nothing
 	arr [i] [] = Just i
 	arr _ [] = Nothing

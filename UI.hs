@@ -73,9 +73,9 @@ setupKeys st = onKeyPress r where
 		setState st $ apply op s
 		buildit st
 
-fixAddr st = readFayRef st >>= \(State a o) ->
-	if validSel a o then return() else
-		modifyFayRef st (\(State a o) -> State (Addr[]) o)
+fixAddr st = readFayRef st >>= \(State addr outline) ->
+	if validSel addr outline then return() else
+		modifyFayRef st (\(State _ o) -> State (Addr[]) o)
 
 buildit st = do
 	fixAddr st

@@ -1,12 +1,11 @@
-fayflags = -p --package fay-ref -O --sourcemap
-gcflags = --compilation_level ADVANCED_OPTIMIZATIONS
+fayflags = --package fay-ref -O --sourcemap
 
 all:V: o.CL o.Test o.Sanitize UI.js
 clean:V:
 	rm -f *.grin *.core *.o o.* *.hi *.html *.js *.mjs *.map
 
 %.js: %.hs
-	fay -s $fayflags $stem.hs | closure $gcflags >$stem.js
+	fay $fayflags $stem.hs -o $stem.js
 
 o.%: %.hs
 	ghc -hidir tmp -odir tmp -main-is $stem.main $stem.hs -o o.$stem
