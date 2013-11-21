@@ -1,5 +1,7 @@
+{-# LANGUAGE UnicodeSyntax #-}
+
 module OL
-	( OLStr, ols, unols
+	( OLStr, ols, unols, olget
 	, OL(OL), olmap, olread, olshow, olexample
 	, Addr(Addr), addrshow, addrread, addrmap
 	, olmapAddr, isChildOf
@@ -14,6 +16,13 @@ data Lexeme = INDENT | DEDENT | LINE OLStr deriving Show
 
 unols :: OLStr -> String
 unols (OLStr s) = s
+
+olget :: Addr → OL → OL
+olget (Addr addr) ol = r (reverse addr) ol where
+	r [] o = o
+	r _ (OL _ []) = error "invalid address"
+	r (a:as) (OL _ sub) =
+		if or[a>=length sub,a<0] then error "invalid address" else r as (sub!!a)
 
 ols :: String -> OLStr
 ols str = OLStr $ case trim str of {[]->"#"; ts->ts} where
