@@ -11,6 +11,10 @@ TODO Add movement operations.
 	Make a node the next child of the parent node.
 	Move a node left and right without changing the vertical position.
 
+TODO BUG Editor.insAbove doesn't work on the top-level node.
+	This is because it uses ADD internally which doesn't make sense on
+	a top-level ndoe.
+
 # Web Frontend
 TODO Get things working in Google Hangouts.
 TODO Use JQuery.
