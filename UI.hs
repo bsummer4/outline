@@ -1,12 +1,43 @@
-module UI where
-import Prelude hiding (intersperse, getText)
+module UI(main) where
+import Prelude hiding (intersperse)
 import FFI
-import JS
 import Util
 import OL
 import Edit
 import Editor
 import FayRef
+
+-- FFI ------------------------------------------------------------------------
+data JS
+data JSCharCode
+data JSDOM
+
+gid :: String -> Fay(Nullable JSDOM)
+gid = ffi "(document.getElementById(%1))"
+mknode :: String -> Fay JSDOM
+mknode = ffi "(document.createElement(%1))"
+setText :: JSDOM -> String -> Fay()
+setText = ffi "((%1).innerText = %2)"
+setAttr :: JSDOM -> String -> String -> Fay()
+setAttr = ffi "((%1).setAttribute(%2,%3))"
+getChilds :: JSDOM -> Fay[JSDOM]
+getChilds = ffi "((%1).children)"
+removeChild :: JSDOM -> JSDOM -> Fay()
+removeChild = ffi "((%1).removeChild(%2))"
+prompt :: String -> String -> Fay(Nullable String)
+prompt = ffi "(prompt(%1,%2))"
+onClick :: JSDOM -> (Fay()) -> Fay()
+onClick = ffi "((%1).onclick = (%2))"
+onKeyPress' :: (JS -> Fay()) -> Fay()
+onKeyPress' = ffi "document.onkeypress = (%1)"
+keyCode :: JS -> JSCharCode
+keyCode = ffi "((%1).keyCode)"
+fromCharCode :: JSCharCode -> String
+fromCharCode = ffi "(String.fromCharCode(%1))"
+onKeyPress :: (String -> Fay()) -> Fay()
+onKeyPress p = onKeyPress' (p.fromCharCode.keyCode)
+appendChild :: JSDOM -> JSDOM -> Fay()
+appendChild = ffi "((%1).appendChild(%2))"
 
 -- DOM ------------------------------------------------------------------------
 data DOM = Node
@@ -18,7 +49,14 @@ data DOM = Node
 
 dom :: String -> DOM
 dom s = Node {tag=s, attrs=[], text=Nothing, click=Nothing, childs=[]}
-(dP,dSPAN,dUL,dLI,dPRE) = (dom "p", dom "span", dom "ul", dom "li", dom "pre")
+
+-- TODO There is a bug in Fay that breaks the following line.
+-- (dP,dSPAN,dUL,dLI,dPRE)=(dom "p", dom "span", dom "ul", dom "li", dom "pre")
+dP = (dom "p")
+dSPAN = (dom "span")
+dUL = (dom "ul")
+dLI = (dom "li")
+dPRE = (dom "pre")
 
 olDom :: FayRef State -> Addr -> OL -> DOM
 olDom st selection tree = top tree where

@@ -12,4 +12,4 @@ o.%: %.hs
 
 o.Test: Util.hs OL.hs Editor.hs Edit.hs
 o.CL: Util.hs OL.hs Editor.hs Edit.hs
-UI.js: DOM.hs Editor.hs JS.hs OL.hs Sanitize.hs UI.hs Util.hs Edit.hs
+UI.js: Editor.hs OL.hs Sanitize.hs UI.hs Util.hs Edit.hs
