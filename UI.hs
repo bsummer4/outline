@@ -6,8 +6,8 @@ import Util
 import OL
 import DOM
 import Edit
+import Editor
 import FayRef
-import PrimEdit
 
 -- Manipulate the State Variable -----------------------------------------------
 setSel st a = modifyFayRef st (\(State _ o) -> State a o)
@@ -56,8 +56,8 @@ editKey n k = do
 		"a" -> return $ InsAfter $ ols ""
 		"o" -> return $ InsBelow $ ols ""
 		"O" -> return $ InsAbove $ ols ""
-		"r" -> prompt' "Replace Text" t >>= return . Edit . ols
-		"\r" -> prompt' "Replace Text" t >>= return . Edit . ols
+		"r" -> prompt' "Replace Text" t >>= return . ReplaceTxt . ols
+		"\r" -> prompt' "Replace Text" t >>= return . ReplaceTxt . ols
 		_ -> return Nada
 
 setupKeys st = onKeyPress r where

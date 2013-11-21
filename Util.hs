@@ -9,10 +9,10 @@ myintersperse sep (a:cs) = a:sep:myintersperse sep cs
 one :: a -> [a]
 one n = [n]
 
-mymapM :: (a -> Fay b) -> [a] -> Fay [b]
+-- mymapM :: Monad m => (a -> m b) -> [a] -> m [b]
 mymapM f l = sequence $ map f l
 
-iter :: (a -> Fay b) -> [a] -> Fay()
+-- iter :: Monad m => (a -> m b) -> [a] -> m ()
 iter f l = mymapM f l >> return ()
 
 mapi :: (Int -> a -> b) -> [a] -> [b]

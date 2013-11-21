@@ -1,88 +1,98 @@
-module Edit where
+{-# LANGUAGE UnicodeSyntax #-}
+
+-- This is our core set of editing operations. All operations are implemented in
+-- terms of these. To enable undo/redo, all operations are reversable. The
+-- ‘edit’ function returns the result of an operation and the reversed
+-- operation.
+
+-- The core operations are add, delete, move, and replace-text.
+-- Add a node to the location of an existing node doesn't delete anything, it
+-- just shifts the existing node and it's lower siblings down one.
+
+-- Editing operations are strict. For example, deleting a non-existant node is
+-- a fatal error. TODO This isn't complete true yet.
+
+module Edit(Edit(ADD,DEL,MOV,EDT),edit) where
 import Prelude
 import Util
 import OL
 
-data State = State Addr OL
-data Mut
-	= SelDown | SelLeft | SelUp | SelRight | Select Addr
-	| Edit OLStr | Delete | Nada
-	| InsBefore OLStr | InsAfter OLStr | InsAbove OLStr | InsBelow OLStr
+data Edit = ADD Addr OL | DEL Addr | MOV Addr Addr | EDT Addr OLStr
+	deriving (Show,Eq)
 
--- Fixes a potentially invalid address.
-fudgeAddr :: State -> State
-fudgeAddr (State (Addr addr) ol) =
-	State (Addr $ reverse $ fudge (reverse addr) ol) ol where
-		fudge [] (OL s _) = []
-		fudge _ (OL _ []) = []
-		fudge (a:as) (OL s sub) =
-			if a<0 then error "there is a bug in fudgeAddr." else
-			if a>=length sub then fudge (a-1:as) (OL s sub) else
-			a:fudge as (sub!!a)
+edit :: OL → Edit → (OL,Edit)
+edit o e = (mutate o e,undo o e)
 
-getNode :: State -> OLStr
-getNode (State (Addr addr) ol) = r (reverse addr) ol where
-	r [] (OL s _) = s
-	r _ (OL _ []) = error "invalid selection"
+-- Utilities ------------------------------------------------------------------
+testundo :: OL → Edit → Bool
+testundo ol op = case edit ol op of
+	(olNew,opUndo) -> case edit olNew opUndo of
+		(olRestore,opRestore) -> olRestore==ol && opRestore==op
+
+text :: OL → OLStr
+text (OL s _) = s
+
+insert l 0 e = e:l
+insert [] n e = [e] -- If the index is bad, insert at the end.
+insert (a:as) n e = a:insert as (n-1) e
+
+get :: Addr → OL → OL
+get (Addr addr) ol = r (reverse addr) ol where
+	r [] o@(OL s _) = o
+	r _ (OL _ []) = error "invalid address"
 	r (a:as) (OL _ sub) =
-		if or[a>=length sub,a<0] then error "invalid selection" else r as (sub!!a)
+		if or[a>=length sub,a<0] then error "invalid address" else r as (sub!!a)
 
-olinsertAt :: Addr -> OLStr -> OL -> OL
-olinsertAt (Addr addr) txt node = olmapAddr f node where
-	f (Addr a) n = case addr `isChildOf` a of
-		Nothing -> Nothing
-		Just index -> case n of
-			OL _ [] -> error "Bad address given to olinsertAt"
-			OL s cs -> Just $ OL s $ insertAt cs index $ OL txt []
+data WalkOp a = Delete | Descend | Replace a
 
-insertAt l 0 e = e:l
-insertAt [] n e = [e] -- If the index is bad, insert at the end.
-insertAt (a:as) n e = a:insertAt as (n-1) e
+lwalk :: (Int → a → WalkOp a) → [a] → [a]
+lwalk f l = r 0 l where
+	r i [] = []
+	r i (x:xs) = case f i x of
+		Delete -> r (i+1) xs
+		Descend -> x:r (i+1) xs
+		Replace a -> a:r (i+1) xs
+
+walk :: (Addr → OL → WalkOp OL) → OL → OL
+walk f outline = foo $ r (Addr[]) outline where
+	amap (Addr a) l = lwalk (\i e -> r (Addr(i:a)) e) l
+	foo (Replace x) = x
+	foo Delete = (OL (ols "") [])
+	foo Descend = error "this will never happen"
+	descendAddr addr (OL l subs) = OL l $ amap addr subs
+	r a ol = case f a ol of
+		Delete -> Delete
+		Descend -> Replace $ descendAddr a ol
+		Replace newNode -> Replace newNode
+
+-- Operations and Their Inverses ----------------------------------------------
+undo :: OL → Edit → Edit
+undo outline pedit = case pedit of
+	DEL a -> ADD a $ get a outline
+	ADD a o -> DEL a
+	MOV f t -> MOV t f
+	EDT a s -> EDT a $ text $ get a outline
+
+mutate :: OL → Edit → OL
+mutate outline operation = case operation of
+	DEL delAt -> del outline delAt
+	ADD addAt frag -> add outline addAt frag
+	MOV f t -> error "TODO"
+	EDT a s -> error "TODO"
+
+del outline delAt = walk f outline where
+	f a n = if a==delAt then Delete else Descend
+
+-- TODO Throw an error if we can't use the address.
+add :: OL → Addr → OL → OL
+add _ (Addr[]) _ = error "Can't add a node at the top-level"
+add outline (Addr (addAt@(loc:_)))  frag = walk f outline where
+	f (Addr a) n@(OL s childs) = case addAt `isChildOf` a of
+		Nothing -> Descend
+		Just idx -> Replace $ OL s $ insert childs idx frag
+
 validSel (Addr addr) ol = r (reverse addr) ol where
 	r [] _ = True
 	r _ (OL _ []) = False
 	r (a:as) (OL _ sub) =
 		if or[a>=length sub,a<0] then False else r as (sub!!a)
-
-down (Addr a) = Addr $ case a of {[]->[]; b:bs->(b+1):bs}
-left (Addr a) = Addr $ case a of {[]->[]; b:bs->bs}
-right (Addr a) = Addr $ (0:a)
-up (Addr a) = Addr $ case a of {[]->[]; b:bs->(b-1):bs}
-moveTo a' (State a o) = if validSel a' o then State a' o else State a o
-
-olreplace addr txt node = olmapAddr f node where
-	f a n = if a/=addr then Nothing else case n of
-		OL _ [] -> Just $ OL txt []
-		OL _ subs -> Just $ OL txt subs
-
-olreplaceAt (Addr[]) f o = case f o of {Nothing -> (OL (ols "#") []); Just o' -> o'}
-olreplaceAt (Addr(i:parent)) f o = olmapAddr r o where
-	r (Addr a) n = if a/=parent then Nothing else case n of
-		OL _ [] -> Nothing
-		OL t subs -> Just $ OL t $ replaceAt subs i f
-
-replaceAt [] n f = error "replaceAt: Bad list index"
-replaceAt (a:as) 0 f = case f a of {Just a'->(a':as); Nothing->as}
-replaceAt (a:as) n f = a:replaceAt as (n-1) f
-
-insAbove t a o = State a $ olreplaceAt a r o where r x = Just $ OL t [x]
-insBelow t a o = apply SelRight $ State a $ olreplaceAt a r o where
-	r (OL l []) = Just $ OL l [OL t []]
-	r (OL l cs) = Just $ OL l ((OL t []):cs)
-
-del a o = fudgeAddr $ State a $ olreplaceAt a (\_ -> Nothing) o
-
-applies muts s = foldl (flip apply) s muts
-apply op s@(State a o) = case op of
-	Nada -> s
-	Delete -> del a o
-	Edit t -> State a $ olreplace a t o
-	Select a' -> moveTo a' s
-	SelDown -> moveTo (down a) (State a o)
-	SelUp -> moveTo (up a) (State a o)
-	SelLeft -> moveTo (left a) (State a o)
-	SelRight -> moveTo (right a) (State a o)
-	InsBefore t -> State a $ olinsertAt a t o
-	InsAfter t -> State (down a) $ olinsertAt (down a) t o
-	InsAbove t -> insAbove t a o
-	InsBelow t -> insBelow t a o
