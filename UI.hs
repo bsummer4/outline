@@ -127,8 +127,8 @@ setupKeys st = onKeyPress r where
 		payload = dPRE{ text=Just $ t++"\n" }
 	r "!" = readFayRef st >>= (\(State _ ol) -> dumpText$olshow$ol)
 	r k = do
-		s <- readFayRef st
-		op <- editKey "TODO Get the currently selected text" k
+		s@(State a ol) <- readFayRef st
+		op <- editKey (oltext$olget a ol) k
 		writeFayRef st $ apply op s
 		buildit st
 

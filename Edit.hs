@@ -40,13 +40,6 @@ insert l 0 e = e:l
 insert [] _ e = [e] -- If the index is bad, insert at the end.
 insert (a:as) n e = a:insert as (n-1) e
 
-get :: Addr → OL → OL
-get (Addr addr) ol = r (reverse addr) ol where
-	r [] o@(OL _ _) = o
-	r _ (OL _ []) = error "invalid address"
-	r (a:as) (OL _ sub) =
-		if or[a>=length sub,a<0] then error "invalid address" else r as (sub!!a)
-
 data WalkOp a = Delete | Descend | Replace a
 
 lwalk :: (Int → a → WalkOp a) → [a] → [a]
@@ -72,10 +65,10 @@ walk f outline = foo $ r (Addr[]) outline where
 -- Operations and Their Inverses ----------------------------------------------
 undo :: OL → Edit → Edit
 undo outline pedit = case pedit of
-	DEL a -> ADD a $ get a outline
+	DEL a -> ADD a $ olget a outline
 	ADD a _ -> DEL a
 	MOV f t -> MOV t f
-	EDT a _ -> EDT a $ text $ get a outline
+	EDT a _ -> EDT a $ text $ olget a outline
 
 mutate :: OL → Edit → OL
 mutate outline operation = case operation of

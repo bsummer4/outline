@@ -1,7 +1,7 @@
 {-# LANGUAGE UnicodeSyntax #-}
 
 module OL
-	( OLStr, ols, unols, olget
+	( OLStr, ols, unols, olget, oltext
 	, OL(OL), olmap, olread, olshow, olexample
 	, Addr(Addr), addrshow, addrread, addrmap
 	, olmapAddr, isChildOf
@@ -16,6 +16,9 @@ data Lexeme = INDENT | DEDENT | LINE OLStr deriving Show
 
 unols :: OLStr -> String
 unols (OLStr s) = s
+
+oltext :: OL -> String
+oltext (OL (OLStr s) _) = s
 
 olget :: Addr → OL → OL
 olget (Addr addr) ol = r (reverse addr) ol where
