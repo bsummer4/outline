@@ -9,7 +9,6 @@ import FayRef
 
 -- FFI ------------------------------------------------------------------------
 data JS
-data JSCharCode
 data JSDOM
 
 gid :: String -> Fay(Nullable JSDOM)
@@ -28,14 +27,18 @@ prompt :: String -> String -> Fay(Nullable String)
 prompt = ffi "(prompt(%1,%2))"
 onClick :: JSDOM -> (Fay()) -> Fay()
 onClick = ffi "((%1).onclick = (%2))"
+onKeyDown' :: (JS -> Fay()) -> Fay()
+onKeyDown' = ffi "document.onkeydown = (%1)"
 onKeyPress' :: (JS -> Fay()) -> Fay()
 onKeyPress' = ffi "document.onkeypress = (%1)"
-keyCode :: JS -> JSCharCode
+keyCode :: JS -> Int
 keyCode = ffi "((%1).keyCode)"
-fromCharCode :: JSCharCode -> String
-fromCharCode = ffi "(String.fromCharCode(%1))"
+charCodeToString :: Int -> String
+charCodeToString = ffi "(String.fromCharCode(%1))"
+onKeyDown :: (Int -> Fay()) -> Fay()
+onKeyDown p = onKeyDown' (p . keyCode)
 onKeyPress :: (String -> Fay()) -> Fay()
-onKeyPress p = onKeyPress' (p.fromCharCode.keyCode)
+onKeyPress p = onKeyPress' (p . charCodeToString . keyCode)
 appendChild :: JSDOM -> JSDOM -> Fay()
 appendChild = ffi "((%1).appendChild(%2))"
 
@@ -122,15 +125,20 @@ editKey t k = do
 		_ -> return Nada
 
 setupKeys :: (FayRef State) -> Fay()
-setupKeys st = onKeyPress r where
+setupKeys st = onKeyPress kpress >> onKeyDown kdown where
 	dumpText t = gendom payload >>= writePage where
 		payload = dPRE{ text=Just $ t++"\n" }
-	r "!" = readFayRef st >>= (\(State _ ol) -> dumpText$olshow$ol)
-	r k = do
+	kpress "!" = readFayRef st >>= (\(State _ ol) -> dumpText$olshow$ol)
+	kpress k = do
 		s@(State a ol) <- readFayRef st
 		op <- editKey (oltext$olget a ol) k
 		writeFayRef st $ apply op s
 		buildit st
+	kdown 37 = kpress "h"
+	kdown 38 = kpress "k"
+	kdown 39 = kpress "l"
+	kdown 40 = kpress "j"
+	kdown _ = return()
 
 fixAddr :: (FayRef State) -> Fay()
 fixAddr st = readFayRef st >>= \(State addr outline) ->
