@@ -38,8 +38,17 @@ up (Addr a) = Addr $ case a of {[]->[]; b:bs->(b-1):bs}
 moveAddr :: Addr -> State -> Addr
 moveAddr a' (State a o _) = if validSel a' o then a' else a
 
+doundo s@(State a o u) = case u of
+	[] -> s
+	(b,ops):m -> State b (fst$edits o ops) m
+
+meh (State a o []) = State a o []
+meh (State a o ((_,[]):more)) = meh $ State a o more
+meh s = s
+
 apply :: Operation -> State -> State
-apply op s@(State a ol undos) = fudgeAddr$State a' ol'((a,esMirror):undos) where
+apply Undo s = doundo s
+apply op s@(State a ol u) = meh$fudgeAddr$State a' ol'((a,esMirror):u) where
 	(a',es) = compile op s
 	(ol',esMirror) = edits ol es
 
@@ -59,6 +68,3 @@ compile op s@(State a o u) = case op of
 	InsAfter t -> (down a,[ADD (down a) $ OL t []])
 	InsBelow t -> (right a,[ADD (right a) $ OL t []])
 	InsAbove t -> (a,[DEL a, ADD a (OL t []), ADD (right a) (olget a o)])
-	Undo -> case u of
-		[] -> (a,[])
-		(a',ops):more -> (a',ops)
