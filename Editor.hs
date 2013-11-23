@@ -9,6 +9,7 @@ data Operation
 	= SelDown | SelLeft | SelUp | SelRight | Select Addr
 	| ReplaceTxt OLStr | Delete | Nada
 	| InsBefore OLStr | InsAfter OLStr | InsAbove OLStr | InsBelow OLStr
+	| Undo
 
 -- Repair a potentially invalid address.
 fudgeAddr :: State -> State
@@ -45,7 +46,7 @@ apply op s@(State a ol undos) = fudgeAddr$State a' ol'((a,esMirror):undos) where
 -- The address that we yeild might not be valid, but passing it through
 -- ‘FudgeAddr’ should give the correct result.
 compile :: Operation -> State -> (Addr,[Edit])
-compile op s@(State a o _) = case op of
+compile op s@(State a o u) = case op of
 	Nada -> (a,[])
 	Select a' -> (moveAddr a' s, [])
 	SelDown -> (moveAddr (down a) s, [])
@@ -58,3 +59,6 @@ compile op s@(State a o _) = case op of
 	InsAfter t -> (down a,[ADD (down a) $ OL t []])
 	InsBelow t -> (right a,[ADD (right a) $ OL t []])
 	InsAbove t -> (a,[DEL a, ADD a (OL t []), ADD (right a) (olget a o)])
+	Undo -> case u of
+		[] -> (a,[])
+		(a',ops):more -> (a',ops)

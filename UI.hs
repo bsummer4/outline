@@ -116,6 +116,7 @@ editKey t k = do
 		"k" -> return SelUp
 		"j" -> return SelDown
 		"d" -> return Delete
+		"u" -> return Undo
 		"i" -> return $ InsBefore $ ols ""
 		"a" -> return $ InsAfter $ ols ""
 		"o" -> return $ InsBelow $ ols ""
