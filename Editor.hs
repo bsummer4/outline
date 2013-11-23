@@ -4,16 +4,16 @@ import Util
 import OL
 import Edit
 
-data State = State Addr OL deriving Eq
-data Mut
+data State = State Addr OL [(Addr,[Edit])] deriving Eq
+data Operation
 	= SelDown | SelLeft | SelUp | SelRight | Select Addr
 	| ReplaceTxt OLStr | Delete | Nada
 	| InsBefore OLStr | InsAfter OLStr | InsAbove OLStr | InsBelow OLStr
 
 -- Repair a potentially invalid address.
 fudgeAddr :: State -> State
-fudgeAddr (State (Addr addr) ol) =
-	State (Addr $ reverse $ fudge (reverse addr) ol) ol where
+fudgeAddr (State (Addr addr) ol undos) =
+	State (Addr $ reverse $ fudge (reverse addr) ol) ol undos where
 		fudge [] _ = []
 		fudge _ (OL _ []) = []
 		fudge (a:as) (OL s sub) =
@@ -22,36 +22,39 @@ fudgeAddr (State (Addr addr) ol) =
 			a:fudge as (sub!!a)
 
 getNode :: State -> OLStr
-getNode (State (Addr addr) ol) = r (reverse addr) ol where
+getNode (State (Addr addr) ol undos) = r (reverse addr) ol where
 	r [] (OL s _) = s
 	r _ (OL _ []) = error "invalid selection"
 	r (a:as) (OL _ sub) =
 		if or[a>=length sub,a<0] then error "invalid selection" else r as (sub!!a)
 
-validSel a ol = st == fudgeAddr st where st = State a ol
+validSel a ol = st == fudgeAddr st where st = (State a ol [])
 down (Addr a) = Addr $ case a of {[]->[]; b:bs->(b+1):bs}
 left (Addr a) = Addr $ case a of {[]->[]; b:bs->bs}
 right (Addr a) = Addr $ (0:a)
 up (Addr a) = Addr $ case a of {[]->[]; b:bs->(b-1):bs}
-moveTo a' (State a o) = if validSel a' o then State a' o else State a o
-simpleEdit o e = fst $ edit o e
-simpleEdits o es = fst $ edits o es
 
-applies :: [Mut] -> State -> State
-applies muts s = foldl (flip apply) s muts
+moveAddr :: Addr -> State -> Addr
+moveAddr a' (State a o _) = if validSel a' o then a' else a
 
-apply :: Mut -> State -> State
-apply op s@(State a o) = case op of
-	Nada -> s
-	Select a' -> moveTo a' s
-	SelDown -> moveTo (down a) (State a o)
-	SelUp -> moveTo (up a) (State a o)
-	SelLeft -> moveTo (left a) (State a o)
-	SelRight -> moveTo (right a) (State a o)
-	Delete -> fudgeAddr $ State a $ simpleEdit o $ DEL a
-	ReplaceTxt t -> State a $ simpleEdit o $ EDT a t
-	InsBefore t -> State a $ simpleEdit o $ ADD a $ OL t []
-	InsAfter t -> State (down a) $ simpleEdit o $ ADD (down a) $ OL t []
-	InsBelow t -> State (right a) $ simpleEdit o $ ADD (right a) $ OL t []
-	InsAbove t -> State a $ simpleEdits o $ [
-		DEL a, ADD a (OL t []), ADD (right a) (olget a o)]
+apply :: Operation -> State -> State
+apply op s@(State a ol undos) = fudgeAddr$State a' ol'((a,esMirror):undos) where
+	(a',es) = compile op s
+	(ol',esMirror) = edits ol es
+
+-- The address that we yeild might not be valid, but passing it through
+-- ‘FudgeAddr’ should give the correct result.
+compile :: Operation -> State -> (Addr,[Edit])
+compile op s@(State a o _) = case op of
+	Nada -> (a,[])
+	Select a' -> (moveAddr a' s, [])
+	SelDown -> (moveAddr (down a) s, [])
+	SelUp -> (moveAddr (up a) s, [])
+	SelLeft -> (moveAddr (left a) s, [])
+	SelRight -> (moveAddr (right a) s, [])
+	Delete -> (a,[DEL a])
+	ReplaceTxt t -> (a,[EDT a t])
+	InsBefore t -> (a,[ADD a $ OL t []])
+	InsAfter t -> (down a,[ADD (down a) $ OL t []])
+	InsBelow t -> (right a,[ADD (right a) $ OL t []])
+	InsAbove t -> (a,[DEL a, ADD a (OL t []), ADD (right a) (olget a o)])

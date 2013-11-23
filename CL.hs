@@ -10,22 +10,22 @@ red ∷ String → String
 red s = "\ESC[1;31m" ++ s ++ "\ESC[0m"
 
 pretty ∷ State → String
-pretty s@(State a ol) = olshow ol' where
-	(State _ ol') = apply (ReplaceTxt $ ols $ red $ unols $ getNode s) s
+pretty s@(State a ol _) = olshow ol' where
+	(State _ ol' undoOps) = apply (ReplaceTxt $ ols $ red $ unols $ getNode s) s
 
 writeScreen ∷ String → IO()
 writeScreen s = putStr "\ESC[2J" >> putStr s
 
 inputloop ∷ State → IO()
-inputloop st@(State a ol) = do
+inputloop st@(State a ol _) = do
 	writeScreen $ pretty st
 	cmd <- getLine
 	inputloop $ apply (parseCmd cmd) st
 
 main ∷ IO()
-main = inputloop (State (Addr[]) olexample)
+main = inputloop (State (Addr[]) olexample [])
 
-parseCmd ∷ String → Editor.Mut
+parseCmd ∷ String → Editor.Operation
 parseCmd "h" = SelLeft
 parseCmd "j" = SelDown
 parseCmd "k" = SelUp
