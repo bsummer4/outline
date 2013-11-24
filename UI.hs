@@ -106,8 +106,7 @@ prompt' q default' = do
 	case x of {Null->return default'; Nullable t->return t}
 
 select :: FayRef State -> Addr -> JSDOM -> Fay()
-select st a _ = modifyFayRef st (\(State _ o u) -> State a o u) >> buildit st
-
+select st a _ = modifyFayRef st (apply $ Select a) >> buildit st
 editKey :: String -> String -> Fay Operation
 editKey t k = do
 	case k of
@@ -129,35 +128,27 @@ setupKeys :: (FayRef State) -> Fay()
 setupKeys st = onKeyPress kpress >> onKeyDown kdown where
 	dumpText t = gendom payload >>= writePage where
 		payload = dPRE{ text=Just $ t++"\n" }
-	kpress "!" = readFayRef st >>= (\(State _ ol _) -> dumpText$olshow$ol)
+	kpress "!" = readFayRef st >>= (\s -> dumpText$olshow$stOL$s)
 	kpress k = do
-		s@(State a ol _) <- readFayRef st
-		case mmap oltext $ olget a ol of
+		s <- readFayRef st
+		case mmap oltext $ olget (stSel s) (stOL s) of
 			Nothing -> return()
 			Just e -> do
 				op <- editKey e k
-				case apply op s of
-					Nothing -> return()
-					Just x -> writeFayRef st x >> buildit st
+				writeFayRef st (apply op s) >> buildit st
 	kdown 37 = kpress "h"
 	kdown 38 = kpress "k"
 	kdown 39 = kpress "l"
 	kdown 40 = kpress "j"
 	kdown _ = return()
 
-fixAddr :: (FayRef State) -> Fay()
-fixAddr st = readFayRef st >>= \(State addr o u) ->
-	if addrOk addr o then return() else
-		writeFayRef st $ State (Addr[]) o u
-
 buildit :: (FayRef State) -> Fay()
 buildit st = do
-	fixAddr st
-	State a ol _ <- readFayRef st
-	gendom(olDom st a ol) >>= setPage
+	editor <- readFayRef st
+	gendom(olDom st (stSel editor) (stOL editor)) >>= setPage
 
 main :: Fay()
 main = do
-	state <- newFayRef $ State (Addr[]) olexample []
+	state <- newFayRef $ editor (Addr[]) olexample
 	buildit state
 	setupKeys state

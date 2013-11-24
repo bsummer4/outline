@@ -10,24 +10,21 @@ red ∷ String → String
 red s = "\ESC[1;31m" ++ s ++ "\ESC[0m"
 
 pretty ∷ State → String
-pretty s@(State a ol _) =
-	case apply (ReplaceTxt $ ols $ red $ unols $ getNode s) s of
-		Nothing -> "BROKEN!"
-		Just(State _ ol' undoOps) -> olshow ol'
+pretty s = olshow $ stOL $ case olget (stSel s) (stOL s) of
+	Nothing -> s
+	Just sel -> apply (ReplaceTxt $ ols $ red $ oltext $ sel) s
 
 writeScreen ∷ String → IO()
 writeScreen s = putStr "\ESC[2J" >> putStr s
 
 inputloop ∷ State → IO()
-inputloop st@(State a ol _) = do
+inputloop st = do
 	writeScreen $ pretty st
 	cmd <- getLine
-	case apply (parseCmd cmd) st of
-		Nothing -> inputloop st
-		Just st' -> inputloop st'
+	inputloop $ apply (parseCmd cmd) st
 
 main ∷ IO()
-main = inputloop (State (Addr[]) olexample [])
+main = inputloop $ editor (Addr[]) olexample
 
 parseCmd ∷ String → Editor.Operation
 parseCmd "h" = SelLeft
