@@ -18,8 +18,6 @@ TODO ‘Editor.insAbove’ doesn't work on the top-level node.
 	This is because it uses ADD internally which doesn't make sense on
 	a top-level node.
 
-TODO Undoing deletions of the top-level node breaks all the things.
-
 # Code Improvements
 TODO Add extensive QuickCheck testing.
 TODO Cleanup OL.hs, Edit.hs, and Editor.hs. ∃some nasty code.

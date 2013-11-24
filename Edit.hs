@@ -1,7 +1,7 @@
 {-# LANGUAGE UnicodeSyntax #-}
 
 -- This is our core set of editing operations. All operations are implemented in
--- terms of these. To enable undo/redo, all operations are reversable. The
+-- terms of these. To enable undo/redo, all operations are reversible. The
 -- ‘edit’ function returns the result of an operation and the reversed
 -- operation.
 
@@ -9,15 +9,15 @@
 -- Add a node to the location of an existing node doesn't delete anything, it
 -- just shifts the existing node and it's lower siblings down one.
 
--- Editing operations are strict. For example, deleting a non-existant node is
--- a fatal error. TODO This isn't complete true yet.
+-- Editing operations are strict. For example, deleting a non-existent node is
+-- a fatal error. TODO This isn't completely true yet.
 
 module Edit(Edit(ADD,DEL,MOV,EDT),edit,edits) where
 import Prelude
 import Util
 import OL
 
-data Edit = ADD Addr OL | DEL Addr | MOV Addr Addr | EDT Addr OLStr
+data Edit = ADD Addr OL|RPL Addr OL|DEL Addr|MOV Addr Addr|EDT Addr OLStr
 	deriving (Show,Eq)
 
 edit :: OL → Edit → (OL,Edit)
@@ -65,6 +65,8 @@ walk f outline = foo $ r (Addr[]) outline where
 -- Operations and Their Inverses ----------------------------------------------
 undo :: OL → Edit → Edit
 undo outline pedit = case pedit of
+	RPL a frag -> RPL a $ olget a outline
+	DEL (Addr[]) -> RPL (Addr[]) outline
 	DEL a -> ADD a $ olget a outline
 	ADD a _ -> DEL a
 	MOV f t -> MOV t f
@@ -74,6 +76,7 @@ mutate :: OL → Edit → OL
 mutate outline operation = case operation of
 	DEL delAt -> del outline delAt
 	ADD addAt frag -> add outline addAt frag
+	RPL rplAt frag -> rpl outline rplAt frag
 	EDT a t -> edt outline a t
 	MOV _ _ -> error "TODO"
 
@@ -85,6 +88,10 @@ edt o at txt = walk f o where
 del :: OL -> Addr -> OL
 del outline delAt = walk f outline where
 	f a _ = if a==delAt then Delete else Descend
+
+rpl :: OL → Addr → OL → OL
+rpl outline replaceAt frag = walk f outline where
+	f a _ = if a==replaceAt then Replace frag else Descend
 
 -- TODO Throw an error if we can't use the address.
 add :: OL → Addr → OL → OL
