@@ -120,6 +120,10 @@ editKey t k = do
 		"a" -> return $ InsAfter $ ols ""
 		"o" -> return $ InsBelow $ ols ""
 		"O" -> return $ InsAbove $ ols ""
+		"y" -> return $ Copy
+		"P" -> return $ PasteBefore
+		"p" -> return $ PasteAfter
+		"x" -> return $ Cut
 		"r" -> prompt' "Replace Text" t >>= return . ReplaceTxt . ols
 		"\r" -> prompt' "Replace Text" t >>= return . ReplaceTxt . ols
 		_ -> return Nada

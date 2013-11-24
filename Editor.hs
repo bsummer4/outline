@@ -1,7 +1,8 @@
-module Editor (
-	State, editor, apply, stSel, stOL, Operation(
-		SelDown, SelLeft, SelUp, SelRight, Select, ReplaceTxt, Delete,
-		Nada, InsBefore, InsAfter, InsAbove, InsBelow, Undo
+module Editor
+	( State, editor, apply, stSel, stOL, Operation
+		( SelDown, SelLeft, SelUp, SelRight, Select, ReplaceTxt, Delete
+		, Nada, InsBefore, InsAfter, InsAbove, InsBelow
+		, Undo, Copy, Cut, PasteAfter, PasteBefore
 	)) where
 import Prelude
 import Util
@@ -22,7 +23,7 @@ data Operation
 	= SelDown | SelLeft | SelUp | SelRight | Select Addr
 	| ReplaceTxt OLStr | Delete | Nada
 	| InsBefore OLStr | InsAfter OLStr | InsAbove OLStr | InsBelow OLStr
-	| Undo
+	| Undo | Copy | Cut | PasteBefore | PasteAfter
 
 -- Repair a potentially invalid address.
 fudgeAddr :: State -> State
@@ -61,6 +62,8 @@ apply o s = case apply' o s of {Nothing->s; Just s'->s'}
 
 apply' :: Operation -> State -> Maybe State
 apply' Undo s = doundo s
+apply' Copy (State a o u c) = Just $ State a o u $ olget a o
+apply' Cut s = apply' Delete $ fromJust $ apply' Copy s
 apply' op s@(State a ol u c) = case compile op s of
 	(a',es) -> case edits ol es of
 		Nothing -> Nothing
@@ -70,7 +73,7 @@ apply' op s@(State a ol u c) = case compile op s of
 -- The address that we yeild might not be valid, but passing it through
 -- ‘FudgeAddr’ should give the correct result.
 compile :: Operation -> State -> (Addr,[Edit])
-compile op s@(State a o _ _) = case op of
+compile op s@(State a o _ c) = case op of
 	Nada -> (a,[])
 	Select a' -> (moveAddr a' s, [])
 	SelDown -> (moveAddr (down a) s, [])
@@ -82,5 +85,8 @@ compile op s@(State a o _ _) = case op of
 	InsBefore t -> (a,[ADD a $ OL t []])
 	InsAfter t -> (down a,[ADD (down a) $ OL t []])
 	InsBelow t -> (right a,[ADD (right a) $ OL t []])
-	InsAbove t -> (a,[DEL a, ADD a (OL t []), ADD (right a) (fromJust $ olget a o)])
+	PasteBefore -> case c of {Nothing->(a,[]); Just f->(a,[ADD a f])}
+	PasteAfter -> case c of {Nothing->(a,[]); Just f->(down a,[ADD (down a) f])}
+	Cut -> compile Delete s
+	Copy -> undefined
 	Undo -> undefined
