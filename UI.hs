@@ -2,7 +2,7 @@ module UI(main) where
 import Prelude hiding (intersperse)
 import FFI
 import Util
-import OL
+import Outline
 import Edit
 import Editor
 import FayRef
@@ -61,7 +61,7 @@ dUL = (dom "ul")
 dLI = (dom "li")
 dPRE = (dom "pre")
 
-olDom :: FayRef State -> Addr -> OL -> DOM
+olDom :: FayRef State -> Addr -> Outline -> DOM
 olDom st selection tree = top tree where
 	l a txt = dSPAN{attrs=[cls a],text=Just(unols txt),click=Just(select st a)}
 	cls a = ("class",if a==selection then "selected" else "unselected")
@@ -132,9 +132,13 @@ setupKeys st = onKeyPress kpress >> onKeyDown kdown where
 	kpress "!" = readFayRef st >>= (\(State _ ol _) -> dumpText$olshow$ol)
 	kpress k = do
 		s@(State a ol _) <- readFayRef st
-		op <- editKey (oltext$fuck$olget a ol) k
-		writeFayRef st $ apply op s
-		buildit st
+		case mmap oltext $ olget a ol of
+			Nothing -> return()
+			Just e -> do
+				op <- editKey e k
+				case apply op s of
+					Nothing -> return()
+					Just x -> writeFayRef st x >> buildit st
 	kdown 37 = kpress "h"
 	kdown 38 = kpress "k"
 	kdown 39 = kpress "l"
@@ -143,7 +147,7 @@ setupKeys st = onKeyPress kpress >> onKeyDown kdown where
 
 fixAddr :: (FayRef State) -> Fay()
 fixAddr st = readFayRef st >>= \(State addr o u) ->
-	if validSel addr o then return() else
+	if addrOk addr o then return() else
 		writeFayRef st $ State (Addr[]) o u
 
 buildit :: (FayRef State) -> Fay()

@@ -1,10 +1,10 @@
 module Editor where
 import Prelude
 import Util
-import OL
+import Outline
 import Edit
 
-data State = State Addr OL [(Addr,[Edit])] deriving Eq
+data State = State Addr Outline [(Addr,[Edit])] deriving Eq
 data Operation
 	= SelDown | SelLeft | SelUp | SelRight | Select Addr
 	| ReplaceTxt OLStr | Delete | Nada
@@ -23,39 +23,45 @@ fudgeAddr (State (Addr addr) ol undos) =
 			a:fudge as (sub!!a)
 
 getNode :: State -> OLStr
-getNode (State (Addr addr) ol undos) = r (reverse addr) ol where
+getNode (State (Addr addr) ol _) = r (reverse addr) ol where
 	r [] (OL s _) = s
 	r _ (OL _ []) = error "invalid selection"
 	r (a:as) (OL _ sub) =
 		if or[a>=length sub,a<0] then error "invalid selection" else r as (sub!!a)
 
-validSel a ol = st == fudgeAddr st where st = (State a ol [])
+-- TODO use addrParent, addrOlder, etc instead of these.
 down (Addr a) = Addr $ case a of {[]->[]; b:bs->(b+1):bs}
-left (Addr a) = Addr $ case a of {[]->[]; b:bs->bs}
+left (Addr a) = Addr $ case a of {[]->[]; _:bs->bs}
 right (Addr a) = Addr $ (0:a)
 up (Addr a) = Addr $ case a of {[]->[]; b:bs->(b-1):bs}
 
 moveAddr :: Addr -> State -> Addr
-moveAddr a' (State a o _) = if validSel a' o then a' else a
+moveAddr a' (State a o _) = if addrOk a' o then a' else a
 
-doundo s@(State a o u) = case u of
-	[] -> s
-	(b,ops):m -> State b (fst$edits o ops) m
+doundo :: State -> Maybe State
+doundo (State _ o u) = case u of
+	[] -> Nothing
+	(a',ops):m -> case edits o ops of
+		Nothing -> Nothing
+		Just (o',_) -> Just $ State a' o' m
 
-meh (State a o []) = State a o []
-meh (State a o ((_,[]):more)) = meh $ State a o more
-meh s = s
+dropNOPs :: State -> State
+dropNOPs (State a o []) = State a o []
+dropNOPs (State a o ((_,[]):more)) = dropNOPs $ State a o more
+dropNOPs s = s
 
-apply :: Operation -> State -> State
+apply :: Operation -> State -> Maybe State
 apply Undo s = doundo s
-apply op s@(State a ol u) = meh$fudgeAddr$State a' ol'((a,esMirror):u) where
-	(a',es) = compile op s
-	(ol',esMirror) = edits ol es
+apply op s@(State a ol u) = case compile op s of
+	(a',es) -> case edits ol es of
+		Nothing -> Nothing
+		Just (ol',esMirror) ->
+			Just $ dropNOPs $ fudgeAddr $ State a' ol' ((a,esMirror):u)
 
 -- The address that we yeild might not be valid, but passing it through
 -- ‘FudgeAddr’ should give the correct result.
 compile :: Operation -> State -> (Addr,[Edit])
-compile op s@(State a o u) = case op of
+compile op s@(State a o _) = case op of
 	Nada -> (a,[])
 	Select a' -> (moveAddr a' s, [])
 	SelDown -> (moveAddr (down a) s, [])
@@ -67,4 +73,5 @@ compile op s@(State a o u) = case op of
 	InsBefore t -> (a,[ADD a $ OL t []])
 	InsAfter t -> (down a,[ADD (down a) $ OL t []])
 	InsBelow t -> (right a,[ADD (right a) $ OL t []])
-	InsAbove t -> (a,[DEL a, ADD a (OL t []), ADD (right a) (fuck $ olget a o)])
+	InsAbove t -> (a,[DEL a, ADD a (OL t []), ADD (right a) (fromJust $ olget a o)])
+	Undo -> undefined

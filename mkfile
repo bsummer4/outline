@@ -10,6 +10,6 @@ clean:V:
 o.%: %.hs
 	ghc -hidir tmp -odir tmp -main-is $stem.main $stem.hs -o o.$stem
 
-o.Test: Util.hs OL.hs Editor.hs Edit.hs
-o.CL: Util.hs OL.hs Editor.hs Edit.hs
-UI.js: Editor.hs OL.hs Sanitize.hs UI.hs Util.hs Edit.hs
+o.Test: Util.hs Outline.hs Editor.hs Edit.hs
+o.CL: Util.hs Outline.hs Editor.hs Edit.hs
+UI.js: Editor.hs Outline.hs Sanitize.hs UI.hs Util.hs Edit.hs

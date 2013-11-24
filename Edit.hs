@@ -5,107 +5,98 @@
 -- ‘edit’ function returns the result of an operation and the reversed
 -- operation.
 
--- The core operations are add, delete, move, and replace-text.
--- Add a node to the location of an existing node doesn't delete anything, it
--- just shifts the existing node and it's lower siblings down one.
+-- The core operations are add, replace sub-tree, delete, move, and
+-- replace-text. Add a node to the location of an existing node doesn't delete
+-- anything, it just shifts the existing node and it's lower siblings down one.
 
--- Editing operations are strict. For example, deleting a non-existent node is
--- a fatal error. TODO This isn't completely true yet.
+-- Editing operations are strict. For example, deleting a non-existent node will
+-- yeild ‘Nothing’ instead simply not changing anything.
 
-module Edit(Edit(ADD,RPL,DEL,MOV,EDT),edit,edits,fuck) where
+module Edit(Edit(ADD,RPL,DEL,MOV,EDT),edit,edit',edits) where
 import Prelude
 import Util
-import OL
+import Outline
 
-data Edit = ADD Addr OL|RPL Addr OL|DEL Addr|MOV Addr Addr|EDT Addr OLStr
+data Edit
+	= ADD Addr Outline
+	| RPL Addr Outline
+	| DEL Addr
+	| MOV Addr Addr
+	| EDT Addr OLStr
 	deriving (Show,Eq)
 
--- TODO ‘edit’ and ‘edits’ should return (Maybe a)
-edit :: OL → Edit → (OL,Edit)
-edit o e = (mutate o e,undo o e)
+edit :: Outline → Edit → Maybe (Outline,Edit)
+edit o e = if opOkay o e then Just(mutate o e,undo o e) else Nothing
 
-edits :: OL → [Edit] → (OL,[Edit])
-edits outline es = foldl r (outline,[]) es where
-	r (o,undos) e = case edit o e of (o',undoOp) -> (o',undoOp:undos)
+edit' :: Outline → Edit → (Outline,Edit)
+edit' o e = case edit o e of {Just r -> r; Nothing ->
+	error $ "Invalid edit: (" ++ show e ++ ") on (" ++ show o ++ ")."}
+
+edits :: Outline → [Edit] → Maybe (Outline,[Edit])
+edits outline es = foldl r (Just(outline,[])) es where
+	r Nothing _ = Nothing
+	r (Just (o,undos)) e = case edit o e of
+		Nothing -> Nothing
+		Just (o',undoOp) -> Just (o',undoOp:undos)
 
 -- Utilities ------------------------------------------------------------------
-text :: OL → OLStr
-text (OL s _) = s
+bad :: a
+bad = error "Something went terribly wrong in Edit.hs"
 
+linsert :: [a] -> Int -> a -> [a]
 linsert l 0 e = e:l
-linsert [] _ e = [e] -- If the index is bad, linsert at the end.
+linsert [] _ _ = bad
 linsert (a:as) n e = a:linsert as (n-1) e
 
-data WalkOp a = Delete | Descend | Replace a
-
-lwalk :: (Int → a → WalkOp a) → [a] → [a]
-lwalk f l = r 0 l where
-	r _ [] = []
-	r i (x:xs) = case f i x of
-		Delete -> r (i+1) xs
-		Descend -> x:r (i+1) xs
-		Replace a -> a:r (i+1) xs
-
-walk :: (Addr → OL → WalkOp OL) → OL → OL
-walk f outline = foo $ r (Addr[]) outline where
-	amap (Addr a) l = lwalk (\i e -> r (Addr(i:a)) e) l
-	foo (Replace x) = x
-	foo Delete = (OL (ols "") [])
-	foo Descend = error "this will never happen"
-	descendAddr addr (OL l subs) = OL l $ amap addr subs
-	r a ol = case f a ol of
-		Delete -> Delete
-		Descend -> Replace $ descendAddr a ol
-		Replace newNode -> Replace newNode
-
-fuck Nothing = error "fuck"
-fuck (Just a) = a
-
+canAddHere :: Addr -> Outline -> Bool
 canAddHere (Addr[]) _ = False
-canAddHere a@(Addr (0:_)) ol = addrOk (addrParent a) ol
-canAddHere a ol = addrOk a ol
+canAddHere a@(Addr(0:_)) ol = addrOk (addrParent a) ol
+canAddHere (Addr(i:is)) ol = addrOk (Addr(i-1:is)) ol
 
+opOkay :: Outline -> Edit -> Bool
 opOkay ol (ADD a _) = canAddHere a ol
 opOkay ol (RPL a _) = addrOk a ol
 opOkay ol (DEL a) = addrOk a ol
 opOkay ol (MOV f t) = addrOk f ol && canAddHere t ol
-opOkay ol (EDT a s) = addrOk a ol
+opOkay ol (EDT a _) = addrOk a ol
+
+getFrag :: Addr -> Outline -> Outline
+getFrag a o = case olget a o of {Nothing->bad; Just f->f}
 
 -- Operations and Their Inverses ----------------------------------------------
-undo :: OL → Edit → Edit
+undo :: Outline → Edit → Edit
 undo outline pedit = case pedit of
-	RPL a frag -> RPL a $ fuck $ olget a outline
+	RPL a _ -> RPL a $ getFrag a outline
 	DEL (Addr[]) -> RPL (Addr[]) outline
-	DEL a -> ADD a $ fuck $ olget a outline
+	DEL a -> ADD a $ getFrag a outline
 	ADD a _ -> DEL a
 	MOV f t -> MOV t f
-	EDT a _ -> EDT a $ text $ fuck $ olget a outline
+	EDT a _ -> EDT a $ ols $ oltext $ getFrag a outline
 
-mutate :: OL → Edit → OL
+mutate :: Outline → Edit → Outline
 mutate outline operation = case operation of
 	DEL delAt -> del outline delAt
 	ADD addAt frag -> add outline addAt frag
 	RPL rplAt frag -> rpl outline rplAt frag
 	EDT a t -> edt outline a t
-	MOV f t -> mutate (mutate outline $ DEL f) $ ADD t $ fuck $ olget f outline
+	MOV f t -> mutate (mutate outline $ DEL f) $ ADD t $ getFrag f outline
 
-edt :: OL → Addr → OLStr → OL
-edt o at txt = walk f o where
-	f a _ = if a/=at then Descend else case fuck(olget at o) of
+edt :: Outline → Addr → OLStr → Outline
+edt o at txt = olwalk f o where
+	f a _ = if a/=at then Descend else case getFrag at o of
 		(OL _ oldchilds) -> Replace $ OL txt oldchilds
 
-del :: OL → Addr → OL
-del outline delAt = walk f outline where
-	f a _ = if a==delAt then Delete else Descend
+del :: Outline → Addr → Outline
+del outline delAt = olwalk f outline where
+	f a _ = if a==delAt then DeleteSubtree else Descend
 
-rpl :: OL → Addr → OL → OL
-rpl outline replaceAt frag = walk f outline where
+rpl :: Outline → Addr → Outline → Outline
+rpl outline replaceAt frag = olwalk f outline where
 	f a _ = if a==replaceAt then Replace frag else Descend
 
--- TODO Throw an error if we can't use the address.
-add :: OL → Addr → OL → OL
-add o (Addr[]) frag = error "Can't add at the top-level."
-add outline (Addr addAt) frag = walk f outline where
+add :: Outline → Addr → Outline → Outline
+add _ (Addr[]) _ = bad
+add outline (Addr addAt) frag = olwalk f outline where
 	f (Addr a) (OL s childs) = case addAt `isChildOf` a of
 		Nothing -> Descend
 		Just idx -> Replace $ OL s $ linsert childs idx frag

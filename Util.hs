@@ -1,3 +1,5 @@
+{-# LANGUAGE UnicodeSyntax #-}
+
 module Util where
 import Prelude
 
@@ -8,6 +10,24 @@ myintersperse sep (a:cs) = a:sep:myintersperse sep cs
 
 one :: a -> [a]
 one n = [n]
+
+mmap :: (a -> b) -> Maybe a -> Maybe b
+mmap _ Nothing = Nothing
+mmap f (Just a) = Just (f a)
+
+fromJust :: Maybe a -> a
+fromJust Nothing = error "Bad code! Used fromJust on a Nothing value!"
+fromJust (Just a) = a
+
+data WalkOp a = DeleteSubtree | Descend | Replace a
+
+lwalk :: (Int → a → WalkOp a) → [a] → [a]
+lwalk f l = r 0 l where
+	r _ [] = []
+	r i (x:xs) = case f i x of
+		DeleteSubtree -> r (i+1) xs
+		Descend -> x:r (i+1) xs
+		Replace a -> a:r (i+1) xs
 
 -- mymapM :: Monad m => (a -> m b) -> [a] -> m [b]
 mymapM f l = sequence $ map f l

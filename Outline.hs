@@ -1,77 +1,94 @@
 {-# LANGUAGE UnicodeSyntax #-}
 
-module OL
-	( OLStr, ols, unols, olget, oltext
-	, OL(OL), olmap, olread, olshow, olexample
-	, Addr(Addr), addrshow, addrread, addrmap, addrOk
-	, addrBefore, addrAfter, addrParent, addrChild
-	, olmapAddr, isChildOf
+module Outline
+	( OLStr, ols, unols
+	, Outline(OL), oltext, olread, olshow, olexample, olget, olwalk
+	, Addr(Addr), addrmap, addrOk, addrBefore, addrAfter, addrParent
+	, addrChild, isChildOf
 	) where
 
 import Prelude
 import Util
+
 data Addr = Addr [Int] deriving (Eq,Show)
 data OLStr = OLStr String deriving (Eq,Show)
-data OL = OL OLStr [OL] deriving (Eq,Show)
+data Outline = OL OLStr [Outline] deriving (Eq,Show)
 data Lexeme = INDENT | DEDENT | LINE OLStr deriving Show
 
-unols :: OLStr -> String
+unols :: OLStr → String
 unols (OLStr s) = s
 
-oltext :: OL -> String
+oltext :: Outline → String
 oltext (OL (OLStr s) _) = s
 
-addrOk :: Addr -> OL -> Bool
+addrOk :: Addr → Outline → Bool
 addrOk a ol = case olget a ol of {Nothing->False; Just _->True}
 
+addrBefore :: Addr → Addr
 addrBefore (Addr a) = Addr $ case a of {[]->[]; b:bs->(b-1):bs}
+addrAfter :: Addr → Addr
 addrAfter (Addr a) = Addr $ case a of {[]->[]; b:bs->(b+1):bs}
-addrParent (Addr a) = Addr $ case a of {[]->[]; b:bs->bs}
+addrParent :: Addr → Addr
+addrParent (Addr a) = Addr $ case a of {[]->[]; _:bs->bs}
+addrChild :: Addr → Addr
 addrChild (Addr a) = Addr $ (0:a)
 
-olget :: Addr → OL → Maybe OL
+olget :: Addr → Outline → Maybe Outline
 olget (Addr addr) ol = r (reverse addr) ol where
 	r [] o = Just o
 	r _ (OL _ []) = Nothing
 	r (a:as) (OL _ sub) =
 		if or[a>=length sub,a<0] then Nothing else r as (sub!!a)
 
-ols :: String -> OLStr
+ols :: String → OLStr
 ols str = OLStr $ case trim str of {[]->"#"; ts->ts} where
-	trim s = map untab $ reverse $ unf $ reverse $ unf s
-	unf "" = ""
-	unf (' ':s) = unf s
-	unf ('\t':s) = unf s
-	unf s = s
+	trim s = map untab $ reverse $ f $ reverse $ f s
+	f "" = ""
+	f (' ':s) = f s
+	f ('\t':s) = f s
+	f s = s
 	untab '\t' = ' '
 	untab x = x
 
-olexample :: OL
+olexample :: Outline
 olexample = ol "h" [l "i",l "j",ol "k" [l "hihihi there",ol "w" [l "t",l "f"]]]
 	where
 		ol t s = OL (ols t) s
 		l t = OL (ols t) []
 
+addrmap :: Addr → (Addr → a → b) → [a] → [b]
 addrmap (Addr a) f l = mapi (\i e -> f (Addr(i:a)) e) l
-addrshow (Addr a) = comma $ map show a
-addrread s = Addr $ map parseInt' $ uncomma s
 
+olshow :: Outline → String
 olshow node = r (0::Int) node ++ "\n" where
 	join = concat . myintersperse "\n"
 	r d (OL (OLStr s) []) = indent d ++ s
 	r d (OL (OLStr s) cs) = join $ (indent d ++ s):(map (r(d+1)) cs)
 	indent 0 = ""
-	indent n = if n<0 then error "Bad Logic in ‘indent’" else "\t" ++ indent(n-1)
+	indent n = if n<0 then undefined else "\t" ++ indent(n-1)
 
+olwalk :: (Addr → Outline → WalkOp Outline) → Outline → Outline
+olwalk f outline = foo $ r (Addr[]) outline where
+	amap (Addr a) l = lwalk (\i e -> r (Addr(i:a)) e) l
+	foo (Replace x) = x
+	foo DeleteSubtree = (OL (ols "") [])
+	foo Descend = undefined
+	descendAddr addr (OL l subs) = OL l $ amap addr subs
+	r a ol = case f a ol of
+		DeleteSubtree -> DeleteSubtree
+		Descend -> Replace $ descendAddr a ol
+		Replace newNode -> Replace newNode
+
+olread :: String → Outline
 olread = finalize . ppp . reorder . ollex where
 	reorder (t:INDENT:ts) = INDENT:t:reorder ts
 	reorder (t:ts) = t:reorder ts
 	reorder [] = []
 	finalize (ol,[]) = ol
-	finalize _ = error "wut.finalize"
+	finalize _ = undefined
 	ppp (INDENT:(LINE l):ts) = case pseq [] ts of {(subs,r)->(OL l subs,r)}
 	ppp (LINE l:ts) = (OL l [],ts)
-	ppp _ = error "wut.ppp"
+	ppp _ = undefined
 	pseq acc (DEDENT:remain) = (reverse acc, remain)
 	pseq acc ts = case ppp ts of {(t,remain) -> pseq (t:acc) remain}
 	ollex s = getIndent [] (0::Int) (0::Int) s
@@ -88,16 +105,7 @@ olread = finalize . ppp . reorder . ollex where
 		LT -> dent (DEDENT:acc) (o-1) n cs
 		EQ -> pgetText acc n "" cs
 
-olmap f ol = case f ol of {Just ol'->ol'; Nothing->descend ol} where
-	descend (OL l []) = (OL l [])
-	descend (OL l subs) = OL l $ map (olmap f) subs
-
-olmapAddr f outline = olmapAddr' (Addr[]) outline where
-	olmapAddr' a ol = case f a ol of {Just ol'->ol'; Nothing->descendAddr a ol}
-	descendAddr _ (OL l []) = (OL l [])
-	descendAddr addr (OL l subs) = OL l $ addrmap addr olmapAddr' subs
-
-isChildOf :: [Int] -> [Int] -> Maybe Int
+isChildOf :: [Int] → [Int] → Maybe Int
 isChildOf parent child = arr (reverse parent) (reverse child) where
 	arr [] _ = Nothing
 	arr [i] [] = Just i

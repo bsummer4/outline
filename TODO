@@ -9,18 +9,8 @@ TODO Add convenient movement operations.
 	Make a node the next child of the parent node.
 	Move a node left and right without changing the vertical position.
 
-# Bugs
-TODO Edit and Editor produce fatal errors when thing go bad.
-	They should throw an exception. UI.js should catch it, print an error, and then
-		drop whatever operation failed.
-
-TODO ‘Editor.insAbove’ doesn't work on the top-level node.
-	This is because it uses ADD internally which doesn't make sense on
-	a top-level node.
-
 # Code Improvements
 TODO Add more extensive QuickCheck testing.
-TODO Cleanup OL.hs, Edit.hs, and Editor.hs. ∃some nasty code.
 TODO How to implement timestamps in Javascript
 
 # Potential Directions

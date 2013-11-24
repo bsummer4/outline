@@ -6,20 +6,21 @@ import Data.List
 import Control.Monad
 import Test.QuickCheck
 import Test.QuickCheck.Gen
-import OL
+import Outline
 import Edit
+import Util
 
 -- Edit -----------------------------------------------------------------------
-prop_reversible ∷ OL → Edit → Property
-prop_reversible ol op = opOkay ol op ==> case edit ol op of
-	(olNew,opUndo) → case edit olNew opUndo of
-		(olRestore,opRestore) → case edit olRestore opRestore of
+prop_reversible ∷ Outline → Edit → Property
+prop_reversible ol op = opOkay ol op ==> case edit' ol op of
+	(olNew,opUndo) → case edit' olNew opUndo of
+		(olRestore,opRestore) → case edit' olRestore opRestore of
 			(olNew',opUndo') → olRestore≡ol && olNew≡olNew' && opUndo≡opUndo'
 
-instance Arbitrary OL where
+instance Arbitrary Outline where
 	arbitrary = sized genOL
 
-genAddr ∷ OL → Int → Gen Addr
+genAddr ∷ Outline → Int → Gen Addr
 genAddr ol n = liftM Addr $ r [] ol n where
 	r a ol 0 = return a
 	r a ol@(OL s []) n = return a
@@ -27,7 +28,7 @@ genAddr ol n = liftM Addr $ r [] ol n where
 		c ← choose(0,length cs) ∷ Gen Int
 		if length cs≡c then return a else r (c:a) (cs!!c) (n-1)
 
-genOL ∷ Int → Gen OL
+genOL ∷ Int → Gen Outline
 genOL 0 = return $ (OL $ ols "a") []
 genOL n = liftM (OL $ ols "a") l where
 	l = do
