@@ -1,30 +1,31 @@
-# Internal
-TODO Add extensive QuickCheck testing.
+# Missing Features
+TODO Get things working in Google Hangouts.
+TODO Add an alternate, plaintext view.
 TODO Add a copy-cut-paste with the ‘pyx’ keys.
-TODO Add some operations.
-TODO Support Editing history and undo's
-TODO Support image/video nodes (through links).
-TODO Add movement operations.
+TODO Add convenient movement operations.
 	Move backwards and forwards.
 	Swap with parent.
-	Become the last child of the predecsor-sibling node.
+	Become the last child of the predecessor-sibling node.
 	Make a node the next child of the parent node.
 	Move a node left and right without changing the vertical position.
 
-TODO No fatal errors in Edit or Editor.
-	Just print an error message and don't change the State.
+# Bugs
+TODO Edit and Editor produce fatal errors when thing go bad.
+	They should throw an exception. UI.js should catch it, print an error, and then
+		drop whatever operation failed.
 
-TODO BUG Editor.insAbove doesn't work on the top-level node.
+TODO ‘Editor.insAbove’ doesn't work on the top-level node.
 	This is because it uses ADD internally which doesn't make sense on
-	a top-level ndoe.
+	a top-level node.
 
-TODO BUG Undoing deletions of the top-level node breaks all the things.
+TODO Undoing deletions of the top-level node breaks all the things.
 
-# Web Frontend
-TODO Get things working in Google Hangouts.
-TODO Use JQuery.
+# Code Improvements
+TODO Add extensive QuickCheck testing.
+TODO Cleanup OL.hs, Edit.hs, and Editor.hs. ∃some nasty code.
+TODO How to implement timestamps in Javascript
 
-# Website
-Make a website where you can edit these outline documents.
-Blog publishing.
-Colaborative editing.
+# Potential Directions
+TODO Support image/video nodes through special syntax.
+TODO Add server-side support to save notes online.
+	I'd like to use this for blogging and/or note-taking.
