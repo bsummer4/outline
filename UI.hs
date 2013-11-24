@@ -58,12 +58,37 @@ dom s = Node {tag=s, attrs=[], text=Nothing, click=Nothing, childs=[]}
 dP = (dom "p")
 dSPAN = (dom "span")
 dUL = (dom "ul")
+dDIV = (dom "div")
 dLI = (dom "li")
 dPRE = (dom "pre")
+dText s = dSPAN{text=Just s}
 
-olDom :: FayRef State -> Addr -> Outline -> DOM
-olDom st selection tree = top tree where
-	l a txt = dSPAN{attrs=[cls a],text=Just(unols txt),click=Just(select st a)}
+data Vars = Vars (State,RenderMethod)
+data RenderMethod = ByText | ByList
+
+render :: RenderMethod -> FayRef Vars -> Addr -> Outline -> DOM
+render ByText = olTextDom
+render ByList = olListDom
+
+otherMeth :: RenderMethod -> RenderMethod
+otherMeth ByText = ByList
+otherMeth ByList = ByText
+
+-- The ‘eol’ bit makes selecting the whole outline to copy elsewhere
+-- work better. It shouldn't change how anything looks.
+olTextDom :: FayRef Vars -> Addr -> Outline -> DOM
+olTextDom vars selection tree = top tree where
+	l a txt = fmt a $
+		dSPAN{attrs=[cls a],text=Just(unols txt++"\n"),click=Just(select vars a)}
+	cls a = ("class",if a==selection then "selected" else "unselected")
+	fmt (Addr a) t = dDIV{childs= [dText$take(2*length a)$repeat ' ', t]}
+	r a (OL txt cs) = l a txt:concat(addrmap a r cs)
+	top (OL txt cs) = dPRE{childs=(l(Addr[])txt:concat(addrmap(Addr[])r cs))++eol}
+	eol = [dText "\n"]
+
+olListDom :: FayRef Vars -> Addr -> Outline -> DOM
+olListDom vars selection tree = top tree where
+	l a txt = dSPAN{attrs=[cls a],text=Just(unols txt),click=Just(select vars a)}
 	cls a = ("class",if a==selection then "selected" else "unselected")
 	r a (OL txt []) = [ dLI{childs=[l a txt]} ]
 	r a (OL txt cs) = [ dLI{childs=[l a txt]}, dUL{childs=concat$addrmap a r cs} ]
@@ -105,8 +130,10 @@ prompt' q default' = do
 	x <- prompt q default'
 	case x of {Null->return default'; Nullable t->return t}
 
-select :: FayRef State -> Addr -> JSDOM -> Fay()
-select st a _ = modifyFayRef st (apply $ Select a) >> buildit st
+select :: FayRef Vars -> Addr -> JSDOM -> Fay()
+select vars a _ = modifyFayRef vars f >> buildit vars where
+	f(Vars(e,r)) = Vars(apply (Select a) e, r)
+
 editKey :: String -> String -> Fay Operation
 editKey t k = do
 	case k of
@@ -128,31 +155,31 @@ editKey t k = do
 		"\r" -> prompt' "Replace Text" t >>= return . ReplaceTxt . ols
 		_ -> return Nada
 
-setupKeys :: (FayRef State) -> Fay()
-setupKeys st = onKeyPress kpress >> onKeyDown kdown where
+setupKeys :: FayRef Vars -> Fay()
+setupKeys vars = onKeyPress kpress >> onKeyDown kdown where
 	dumpText t = gendom payload >>= writePage where
 		payload = dPRE{ text=Just $ t++"\n" }
-	kpress "!" = readFayRef st >>= (\s -> dumpText$olshow$stOL$s)
+	kpress "!" = modifyFayRef vars (\(Vars(e,r)) -> Vars(e,otherMeth r)) >> buildit vars
 	kpress k = do
-		s <- readFayRef st
+		Vars(s,r) <- readFayRef vars
 		case mmap oltext $ olget (stSel s) (stOL s) of
 			Nothing -> return()
 			Just e -> do
 				op <- editKey e k
-				writeFayRef st (apply op s) >> buildit st
+				writeFayRef vars (Vars(apply op s,r)) >> buildit vars
 	kdown 37 = kpress "h"
 	kdown 38 = kpress "k"
 	kdown 39 = kpress "l"
 	kdown 40 = kpress "j"
 	kdown _ = return()
 
-buildit :: (FayRef State) -> Fay()
-buildit st = do
-	editor <- readFayRef st
-	gendom(olDom st (stSel editor) (stOL editor)) >>= setPage
+buildit :: FayRef Vars -> Fay()
+buildit vars = do
+	Vars (editor,method) <- readFayRef vars
+	gendom(render method vars (stSel editor) (stOL editor)) >>= setPage
 
 main :: Fay()
 main = do
-	state <- newFayRef $ editor (Addr[]) olexample
-	buildit state
-	setupKeys state
+	vars <- newFayRef $ Vars (editor (Addr[]) olexample, ByList)
+	buildit vars
+	setupKeys vars
