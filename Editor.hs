@@ -36,11 +36,14 @@ fudgeAddr (State (Addr addr) ol undos c) =
 			if a>=length sub then fudge (a-1:as) (OL s sub) else
 			a:fudge as (sub!!a)
 
--- TODO use addrParent, addrOlder, etc instead of these.
-down (Addr a) = Addr $ case a of {[]->[]; b:bs->(b+1):bs}
-left (Addr a) = Addr $ case a of {[]->[]; _:bs->bs}
-right (Addr a) = Addr $ (0:a)
-up (Addr a) = Addr $ case a of {[]->[]; b:bs->(b-1):bs}
+down :: Addr -> Addr
+down = addrAfter
+left :: Addr -> Addr
+left = addrParent
+right :: Addr -> Addr
+right = addrChild
+up :: Addr -> Addr
+up = addrBefore
 
 moveAddr :: Addr -> State -> Addr
 moveAddr a' (State a o _ _) = if addrOk a' o then a' else a
