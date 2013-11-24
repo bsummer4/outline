@@ -40,13 +40,13 @@ instance Arbitrary Edit where
 		ol ← sized genOL
 		a1 ← sized $ genAddr ol
 		a2 ← sized $ genAddr ol
-		n ← choose(0,4) ∷ Gen Int
+		n ← choose(0,3) ∷ Gen Int
 		return $ case n of
 			0 → ADD a1 ol
 			1 → RPL a1 ol
 			2 → DEL a1
-			3 → DEL a1 -- TODO MOV a1 a2
-			4 → EDT a1 (ols "b")
+			3 → EDT a1 (ols "b")
+--			4 → MOV a1 a2
 			_ → error "This will never happen."
 
 test = quickCheck prop_reversible
@@ -58,8 +58,8 @@ canAddHere a ol = addrOk a ol
 opOkay ol (ADD a _) = canAddHere a ol
 opOkay ol (RPL a _) = addrOk a ol
 opOkay ol (DEL a) = addrOk a ol
-opOkay ol (MOV f t) = addrOk f ol && canAddHere t ol
 opOkay ol (EDT a s) = addrOk a ol
+--opOkay ol (MOV f t) = addrOk f ol && canAddHere t ol
 
 main ∷ IO()
 main = test

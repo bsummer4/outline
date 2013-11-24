@@ -12,7 +12,7 @@
 -- Editing operations are strict. For example, deleting a non-existent node will
 -- yeild ‘Nothing’ instead simply not changing anything.
 
-module Edit(Edit(ADD,RPL,DEL,MOV,EDT),edit,edit',edits) where
+module Edit(Edit(ADD,RPL,DEL,EDT),edit,edit',edits) where
 import Prelude
 import Util
 import Outline
@@ -21,8 +21,8 @@ data Edit
 	= ADD Addr Outline
 	| RPL Addr Outline
 	| DEL Addr
-	| MOV Addr Addr
 	| EDT Addr OLStr
+--	| MOV Addr Addr
 	deriving (Show,Eq)
 
 edit :: Outline → Edit → Maybe (Outline,Edit)
@@ -57,8 +57,8 @@ opOkay :: Outline -> Edit -> Bool
 opOkay ol (ADD a _) = canAddHere a ol
 opOkay ol (RPL a _) = addrOk a ol
 opOkay ol (DEL a) = addrOk a ol
-opOkay ol (MOV f t) = addrOk f ol && canAddHere t ol
 opOkay ol (EDT a _) = addrOk a ol
+--opOkay ol (MOV f t) = addrOk f ol && canAddHere t ol
 
 getFrag :: Addr -> Outline -> Outline
 getFrag a o = case olget a o of {Nothing->bad; Just f->f}
@@ -70,8 +70,8 @@ undo outline pedit = case pedit of
 	DEL (Addr[]) -> RPL (Addr[]) outline
 	DEL a -> ADD a $ getFrag a outline
 	ADD a _ -> DEL a
-	MOV f t -> MOV t f
 	EDT a _ -> EDT a $ ols $ oltext $ getFrag a outline
+--	MOV f t -> MOV t f
 
 mutate :: Outline → Edit → Outline
 mutate outline operation = case operation of
@@ -79,7 +79,7 @@ mutate outline operation = case operation of
 	ADD addAt frag -> add outline addAt frag
 	RPL rplAt frag -> rpl outline rplAt frag
 	EDT a t -> edt outline a t
-	MOV f t -> mutate (mutate outline $ DEL f) $ ADD t $ getFrag f outline
+--	MOV f t -> mutate (mutate outline $ DEL f) $ ADD t $ getFrag f outline
 
 edt :: Outline → Addr → OLStr → Outline
 edt o at txt = olwalk f o where
