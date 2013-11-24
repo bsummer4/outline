@@ -19,7 +19,7 @@ TODO ‘Editor.insAbove’ doesn't work on the top-level node.
 	a top-level node.
 
 # Code Improvements
-TODO Add extensive QuickCheck testing.
+TODO Add more extensive QuickCheck testing.
 TODO Cleanup OL.hs, Edit.hs, and Editor.hs. ∃some nasty code.
 TODO How to implement timestamps in Javascript
 

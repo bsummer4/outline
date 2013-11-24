@@ -12,7 +12,7 @@
 -- Editing operations are strict. For example, deleting a non-existent node is
 -- a fatal error. TODO This isn't completely true yet.
 
-module Edit(Edit(ADD,DEL,MOV,EDT),edit,edits) where
+module Edit(Edit(ADD,RPL,DEL,MOV,EDT),edit,edits,fuck) where
 import Prelude
 import Util
 import OL
@@ -20,6 +20,7 @@ import OL
 data Edit = ADD Addr OL|RPL Addr OL|DEL Addr|MOV Addr Addr|EDT Addr OLStr
 	deriving (Show,Eq)
 
+-- TODO ‘edit’ and ‘edits’ should return (Maybe a)
 edit :: OL → Edit → (OL,Edit)
 edit o e = (mutate o e,undo o e)
 
@@ -28,17 +29,12 @@ edits outline es = foldl r (outline,[]) es where
 	r (o,undos) e = case edit o e of (o',undoOp) -> (o',undoOp:undos)
 
 -- Utilities ------------------------------------------------------------------
--- testundo :: OL → Edit → Bool
--- testundo ol op = case edit ol op of
-	-- (olNew,opUndo) -> case edit olNew opUndo of
-		-- (olRestore,opRestore) -> olRestore==ol && opRestore==op
-
 text :: OL → OLStr
 text (OL s _) = s
 
-insert l 0 e = e:l
-insert [] _ e = [e] -- If the index is bad, insert at the end.
-insert (a:as) n e = a:insert as (n-1) e
+linsert l 0 e = e:l
+linsert [] _ e = [e] -- If the index is bad, linsert at the end.
+linsert (a:as) n e = a:linsert as (n-1) e
 
 data WalkOp a = Delete | Descend | Replace a
 
@@ -62,15 +58,28 @@ walk f outline = foo $ r (Addr[]) outline where
 		Descend -> Replace $ descendAddr a ol
 		Replace newNode -> Replace newNode
 
+fuck Nothing = error "fuck"
+fuck (Just a) = a
+
+canAddHere (Addr[]) _ = False
+canAddHere a@(Addr (0:_)) ol = addrOk (addrParent a) ol
+canAddHere a ol = addrOk a ol
+
+opOkay ol (ADD a _) = canAddHere a ol
+opOkay ol (RPL a _) = addrOk a ol
+opOkay ol (DEL a) = addrOk a ol
+opOkay ol (MOV f t) = addrOk f ol && canAddHere t ol
+opOkay ol (EDT a s) = addrOk a ol
+
 -- Operations and Their Inverses ----------------------------------------------
 undo :: OL → Edit → Edit
 undo outline pedit = case pedit of
-	RPL a frag -> RPL a $ olget a outline
+	RPL a frag -> RPL a $ fuck $ olget a outline
 	DEL (Addr[]) -> RPL (Addr[]) outline
-	DEL a -> ADD a $ olget a outline
+	DEL a -> ADD a $ fuck $ olget a outline
 	ADD a _ -> DEL a
 	MOV f t -> MOV t f
-	EDT a _ -> EDT a $ text $ olget a outline
+	EDT a _ -> EDT a $ text $ fuck $ olget a outline
 
 mutate :: OL → Edit → OL
 mutate outline operation = case operation of
@@ -78,14 +87,14 @@ mutate outline operation = case operation of
 	ADD addAt frag -> add outline addAt frag
 	RPL rplAt frag -> rpl outline rplAt frag
 	EDT a t -> edt outline a t
-	MOV _ _ -> error "TODO"
+	MOV f t -> mutate (mutate outline $ DEL f) $ ADD t $ fuck $ olget f outline
 
 edt :: OL → Addr → OLStr → OL
 edt o at txt = walk f o where
-	f a _ = if a/=at then Descend else case olget at o of
+	f a _ = if a/=at then Descend else case fuck(olget at o) of
 		(OL _ oldchilds) -> Replace $ OL txt oldchilds
 
-del :: OL -> Addr -> OL
+del :: OL → Addr → OL
 del outline delAt = walk f outline where
 	f a _ = if a==delAt then Delete else Descend
 
@@ -95,8 +104,8 @@ rpl outline replaceAt frag = walk f outline where
 
 -- TODO Throw an error if we can't use the address.
 add :: OL → Addr → OL → OL
-add _ (Addr[]) _ = error "Can't add a node at the top-level"
+add o (Addr[]) frag = error "Can't add at the top-level."
 add outline (Addr addAt) frag = walk f outline where
 	f (Addr a) (OL s childs) = case addAt `isChildOf` a of
 		Nothing -> Descend
-		Just idx -> Replace $ OL s $ insert childs idx frag
+		Just idx -> Replace $ OL s $ linsert childs idx frag

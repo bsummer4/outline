@@ -67,4 +67,4 @@ compile op s@(State a o u) = case op of
 	InsBefore t -> (a,[ADD a $ OL t []])
 	InsAfter t -> (down a,[ADD (down a) $ OL t []])
 	InsBelow t -> (right a,[ADD (right a) $ OL t []])
-	InsAbove t -> (a,[DEL a, ADD a (OL t []), ADD (right a) (olget a o)])
+	InsAbove t -> (a,[DEL a, ADD a (OL t []), ADD (right a) (fuck $ olget a o)])

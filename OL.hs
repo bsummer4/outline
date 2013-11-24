@@ -3,7 +3,8 @@
 module OL
 	( OLStr, ols, unols, olget, oltext
 	, OL(OL), olmap, olread, olshow, olexample
-	, Addr(Addr), addrshow, addrread, addrmap
+	, Addr(Addr), addrshow, addrread, addrmap, addrOk
+	, addrBefore, addrAfter, addrParent, addrChild
 	, olmapAddr, isChildOf
 	) where
 
@@ -20,12 +21,20 @@ unols (OLStr s) = s
 oltext :: OL -> String
 oltext (OL (OLStr s) _) = s
 
-olget :: Addr → OL → OL
+addrOk :: Addr -> OL -> Bool
+addrOk a ol = case olget a ol of {Nothing->False; Just _->True}
+
+addrBefore (Addr a) = Addr $ case a of {[]->[]; b:bs->(b-1):bs}
+addrAfter (Addr a) = Addr $ case a of {[]->[]; b:bs->(b+1):bs}
+addrParent (Addr a) = Addr $ case a of {[]->[]; b:bs->bs}
+addrChild (Addr a) = Addr $ (0:a)
+
+olget :: Addr → OL → Maybe OL
 olget (Addr addr) ol = r (reverse addr) ol where
-	r [] o = o
-	r _ (OL _ []) = error "invalid address"
+	r [] o = Just o
+	r _ (OL _ []) = Nothing
 	r (a:as) (OL _ sub) =
-		if or[a>=length sub,a<0] then error "invalid address" else r as (sub!!a)
+		if or[a>=length sub,a<0] then Nothing else r as (sub!!a)
 
 ols :: String -> OLStr
 ols str = OLStr $ case trim str of {[]->"#"; ts->ts} where

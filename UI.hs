@@ -132,7 +132,7 @@ setupKeys st = onKeyPress kpress >> onKeyDown kdown where
 	kpress "!" = readFayRef st >>= (\(State _ ol _) -> dumpText$olshow$ol)
 	kpress k = do
 		s@(State a ol _) <- readFayRef st
-		op <- editKey (oltext$olget a ol) k
+		op <- editKey (oltext$fuck$olget a ol) k
 		writeFayRef st $ apply op s
 		buildit st
 	kdown 37 = kpress "h"
