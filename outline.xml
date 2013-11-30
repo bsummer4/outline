@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+	<ModulePrefs title="Hangout Starter">
+		<Require feature="rpc" />
+		<Require feature="views" />
+		</ModulePrefs>
+	<Content type="html"><![CDATA[
+		<html>
+			<style type="text/css">
+				ul {list-style-type: none; margin-left: 10px; padding: 0;
+					margin-top: 0; margin-bottom: 0; }
+				li {padding:0; margin:0; padding-left: 4; margin-bottom:4; margin-top:4;
+					border-left: solid; border-width: 3; }
+				span.selected { background-color: lightblue }
+				p {padding:0; margin:0; padding-left: 4; margin-bottom:10; margin-top:4;
+					border-left: solid; border-width: 3; }
+				</style>
+			<body>
+				<script src="//plus.google.com/hangouts/_/api/v1/hangout.js"></script>
+				<script src="//go-for-google-hangouts.googlecode.com/git/hangouts.js"></script>
+				<script src="//hangout-outline.googlecode.com/git/UI.js"></script>
+				<script>
+					function goInit(eventObj) {
+						gapi.hangout.onApiReady.add(function(e) { Fay$$_(UI.main); });}
+					gadgets.util.registerOnLoadHandler(goInit);
+					</script>
+				<div id="outline"></div>
+				</body>
+			</html>
+		]]>
+	</Content>
+	</Module>

@@ -1,4 +1,4 @@
-fayflags = --Wall --package fay-ref -O --sourcemap
+fayflags = --library --Wall --package fay-ref -p -O --sourcemap
 
 all:V: o.Sanitize UI.js
 clean:V:
