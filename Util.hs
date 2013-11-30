@@ -29,10 +29,7 @@ lwalk f l = r 0 l where
 		Descend -> x:r (i+1) xs
 		Replace a -> a:r (i+1) xs
 
--- mymapM :: Monad m => (a -> m b) -> [a] -> m [b]
 mymapM f l = sequence $ map f l
-
--- iter :: Monad m => (a -> m b) -> [a] -> m ()
 iter f l = mymapM f l >> return ()
 
 mapi :: (Int -> a -> b) -> [a] -> [b]

@@ -3,9 +3,9 @@ import Prelude hiding (intersperse)
 import FFI
 import Util
 import Outline
-import Edit
 import Editor
 import FayRef
+import Sanitize
 
 -- FFI ------------------------------------------------------------------------
 data JS
@@ -63,7 +63,7 @@ dLI = (dom "li")
 dPRE = (dom "pre")
 dText s = dSPAN{text=Just s}
 
-data Vars = Vars (State,RenderMethod)
+data Vars = Vars (Editor,RenderMethod)
 data RenderMethod = ByText | ByList
 
 render :: RenderMethod -> FayRef Vars -> Addr -> Outline -> DOM
@@ -157,8 +157,6 @@ editKey t k = do
 
 setupKeys :: FayRef Vars -> Fay()
 setupKeys vars = onKeyPress kpress >> onKeyDown kdown where
-	dumpText t = gendom payload >>= writePage where
-		payload = dPRE{ text=Just $ t++"\n" }
 	kpress "!" = modifyFayRef vars (\(Vars(e,r)) -> Vars(e,otherMeth r)) >> buildit vars
 	kpress k = do
 		Vars(s,r) <- readFayRef vars
@@ -180,6 +178,6 @@ buildit vars = do
 
 main :: Fay()
 main = do
-	vars <- newFayRef $ Vars (editor (Addr[]) olexample, ByList)
+	vars <- newFayRef $ Vars (mkeditor (Addr[]) olexample, ByList)
 	buildit vars
 	setupKeys vars

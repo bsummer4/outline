@@ -1,5 +1,5 @@
 module Editor
-	( State, editor, apply, stSel, stOL, Operation
+	( Editor, mkeditor, apply, stSel, stOL, Operation
 		( SelDown, SelLeft, SelUp, SelRight, Select, ReplaceTxt, Delete
 		, Nada, InsBefore, InsAfter, InsAbove, InsBelow
 		, Undo, Copy, Cut, PasteAfter, PasteBefore
@@ -9,15 +9,15 @@ import Util
 import Outline
 import Edit
 
-data State = State
+data Editor = State
 	{ stSel :: Addr
 	, stOL :: Outline
 	, stUndos :: [(Addr,[Edit])]
 	, stClip :: Maybe Outline
 	}
 
-editor :: Addr -> Outline -> State
-editor a o = State a o [] Nothing
+mkeditor :: Addr -> Outline -> Editor
+mkeditor a o = State a o [] Nothing
 
 data Operation
 	= SelDown | SelLeft | SelUp | SelRight | Select Addr
@@ -26,7 +26,7 @@ data Operation
 	| Undo | Copy | Cut | PasteBefore | PasteAfter
 
 -- Repair a potentially invalid address.
-fudgeAddr :: State -> State
+fudgeAddr :: Editor -> Editor
 fudgeAddr (State (Addr addr) ol undos c) =
 	State (Addr $ reverse $ fudge (reverse addr) ol) ol undos c where
 		fudge [] _ = []
@@ -45,27 +45,27 @@ right = addrChild
 up :: Addr -> Addr
 up = addrBefore
 
-moveAddr :: Addr -> State -> Addr
+moveAddr :: Addr -> Editor -> Addr
 moveAddr a' (State a o _ _) = if addrOk a' o then a' else a
 
-doundo :: State -> Maybe State
+doundo :: Editor -> Maybe Editor
 doundo (State _ o u c) = case u of
 	[] -> Nothing
 	(a',ops):m -> case edits o ops of
 		Nothing -> Nothing
 		Just (o',_) -> Just $ State a' o' m c
 
-dropNOPs :: State -> State
+dropNOPs :: Editor -> Editor
 dropNOPs (State a o [] c) = State a o [] c
 dropNOPs (State a o ((_,[]):more) c) = dropNOPs $ State a o more c
 dropNOPs s = s
 
-apply :: Operation -> State -> State
+apply :: Operation -> Editor -> Editor
 apply o s = case apply' o s of {Nothing->s; Just s'->s'}
 
-apply' :: Operation -> State -> Maybe State
+apply' :: Operation -> Editor -> Maybe Editor
 apply' Undo s = doundo s
-apply' Copy (State a o u c) = Just $ State a o u $ olget a o
+apply' Copy (State a o u _) = Just $ State a o u $ olget a o
 apply' Cut s = apply' Delete $ fromJust $ apply' Copy s
 apply' op s@(State a ol u c) = case compile op s of
 	(a',es) -> case edits ol es of
@@ -75,7 +75,7 @@ apply' op s@(State a ol u c) = case compile op s of
 
 -- The address that we yeild might not be valid, but passing it through
 -- ‘FudgeAddr’ should give the correct result.
-compile :: Operation -> State -> (Addr,[Edit])
+compile :: Operation -> Editor -> (Addr,[Edit])
 compile op s@(State a o _ c) = case op of
 	Nada -> (a,[])
 	Select a' -> (moveAddr a' s, [])
@@ -88,6 +88,7 @@ compile op s@(State a o _ c) = case op of
 	InsBefore t -> (a,[ADD a $ OL t []])
 	InsAfter t -> (down a,[ADD (down a) $ OL t []])
 	InsBelow t -> (right a,[ADD (right a) $ OL t []])
+	InsAbove t -> (a,[DEL a, ADD a (OL t []), ADD (right a) (fromJust $ olget a o)])
 	PasteBefore -> case c of {Nothing->(a,[]); Just f->(a,[ADD a f])}
 	PasteAfter -> case c of {Nothing->(a,[]); Just f->(down a,[ADD (down a) f])}
 	Cut -> compile Delete s
