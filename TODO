@@ -1,5 +1,9 @@
 # Missing Features
+TODO Not being able to work with the top-level node sucks.
 TODO Get things working in Google Hangouts.
+	How do we send messages to all clients?
+		Use the shared state or the messaging system.
+
 TODO Add convenient movement operations.
 	Move backwards and forwards.
 	Swap with parent.
@@ -7,9 +11,17 @@ TODO Add convenient movement operations.
 	Make a node the next child of the parent node.
 	Move a node left and right without changing the vertical position.
 
+TODO Synchronization between clients.
+	Timestamp messages.
+	Instead of editing the state, keyboard/mouse inputs become messages.
+	Receiving a message is what changes the state.
+	Send a no-op message every-so-often.
+	Add a message Queue.
+		Messages don't get applied until we have a message from everybody.
+			Will need to add logic to handle log/disconnections late on.
+
 # Code Improvements
 TODO Add more extensive QuickCheck testing.
-TODO How to implement timestamps in Javascript
 
 # Potential Directions
 TODO Support image/video nodes through special syntax.
