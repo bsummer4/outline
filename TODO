@@ -19,13 +19,13 @@ TODO Add convenient movement operations.
 		This should be possible using most movement commands.
 
 TODO Synchronization between clients.
-	Timestamp messages.
-	Instead of editing the state, keyboard/mouse inputs become messages.
-	Receiving a message is what changes the state.
-	Send a no-op message every-so-often.
-	Add a message Queue.
-		Messages don't get applied until we have a message from everybody.
-			Will need to add logic to handle log/disconnections late on.
+	Make UI.hs use Sync.hs
+		Timestamps are (unixTime-startTime)%msPerTimeStamp
+		Send a no-op message every msPerTimeStamp.
+		Make all UI stuff go though the Queue.
+			Only one client.
+			Input events add to the queue.
+			UI is changed when messages come out of the syncronizer.
 
 # Code Improvements
 TODO Add more extensive QuickCheck testing.
