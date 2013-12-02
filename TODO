@@ -1,15 +1,22 @@
 # Missing Features
 TODO Not being able to work with the top-level node sucks.
+	Investigate how much trouble it would be to allow multiple top-level nodes.
+
 TODO Get things working in Google Hangouts.
 	How do we send messages to all clients?
 		Use the shared state or the messaging system.
 
+TODO Stop using ‘prompt()’.
+	Use ‘<div><input/></div>’.
+	Allow multi-line inputs and process then with Sanitize.
+
 TODO Add convenient movement operations.
-	Move backwards and forwards.
-	Swap with parent.
-	Become the last child of the predecessor-sibling node.
-	Make a node the next child of the parent node.
-	Move a node left and right without changing the vertical position.
+	Move the cursor visually up/down, ignoring nesting.
+	Move a node left/right without changing the vertical position.
+	Support sliding nodes around.
+		This should be possible using any movement command.
+	Support sliding sub-trees around.
+		This should be possible using most movement commands.
 
 TODO Synchronization between clients.
 	Timestamp messages.
