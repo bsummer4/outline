@@ -6,6 +6,7 @@ TODO Stop using ‘prompt()’.
 	Use ‘<div><input/></div>’.
 	Allow multi-line inputs and process then with Sanitize.
 
+TODO Support multiple cursors in Editor.hs.
 TODO Add more convenient movement operations.
 	Move the cursor visually up/down, ignoring nesting.
 	Move a node left/right without changing the vertical position.

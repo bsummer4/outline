@@ -20,14 +20,14 @@ test = do
 	quickCheck prop_validPending
 
 -- Sync -----------------------------------------------------------------------
-prop_validPending :: Queue() -> Bool
-prop_validPending q@(Queue n l p) = all (\m -> l<ts m && n>user m) p
+prop_validPending ∷ Queue() → Bool
+prop_validPending q@(Queue n l p) = all (\m → l<ts m && n>user m) p
 
-prop_flushable :: Queue() -> Bool
-prop_flushable q@(Queue (ID n) _ _) = (Just$sort msgs)==(mmap sort$flushed)
+prop_flushable ∷ Queue() → Bool
+prop_flushable q@(Queue (ID n) _ _) = (Just$sort msgs)≡mmap sort$flushed)
 	where
 		flushed = mmap (pending.fst) $ qMsgs q $ msgs
-		msgs = map (\id -> msg bigTS (ID id) ()) [0..n-1]
+		msgs = map (\id → msg bigTS (ID id) ()) [0..n-1]
 		bigTS = tsInc $ maxTS $ pending q
 
 instance Arbitrary TimeStamp where
@@ -36,21 +36,21 @@ instance Arbitrary TimeStamp where
 instance Arbitrary ClientId where
 	arbitrary = arbitrary >>= return.ID
 
-genMsg :: Arbitrary a => Queue a -> a -> Gen(Msg a)
+genMsg ∷ Arbitrary a => Queue a → a → Gen(Msg a)
 genMsg (Queue (ID 0) _ _) m = error $ "No clients, can't make a message"
 genMsg q@(Queue (ID n) (TS sync) p) m = do
-	u <- choose(0,n-1)
-	t <- choose(sync+1,sync+3)
+	u ← choose(0,n-1)
+	t ← choose(sync+1,sync+3)
 	return $ msg (TS t) (ID u) m
 
-genQueue :: Show a => Arbitrary a => Queue a -> Gen(Queue a)
+genQueue ∷ Show a => Arbitrary a => Queue a → Gen(Queue a)
 genQueue q = do
-	x <- choose(0,9::Int)
+	x ← choose(0,9∷Int)
 	if 0≡x || ID 0≡nextId q then return$snd$qConnect q else
 		arbitrary >>= mapM(genMsg q) >>= (return.fst.fromJust.qMsgs q)
 
 instance (Show a,Arbitrary a) => Arbitrary (Queue a) where
-	arbitrary = foldl (\q() -> q>>=genQueue) (return qEmpty) (take 25$repeat ())
+	arbitrary = foldl (\q() → q>>=genQueue) (return qEmpty) (take 25$repeat ())
 
 -- Edit -----------------------------------------------------------------------
 prop_reversible ∷ Outline → Edit → Property
