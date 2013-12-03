@@ -21,10 +21,11 @@ test = do
 
 -- Sync -----------------------------------------------------------------------
 prop_validPending ∷ Queue() → Bool
-prop_validPending q@(Queue n l p) = all (\m → l<ts m && n>user m) p
+prop_validPending q@(Queue n l p cs) = all chk  p where
+	chk m = l<ts m && n>user m && (not$null$filter (\c→user m≡c) cs)
 
 prop_flushable ∷ Queue() → Bool
-prop_flushable q@(Queue (ID n) _ _) = (Just$sort msgs)≡mmap sort$flushed)
+prop_flushable q@(Queue (ID n) _ _ _) = (Just$sort msgs)≡(mmap sort$flushed)
 	where
 		flushed = mmap (pending.fst) $ qMsgs q $ msgs
 		msgs = map (\id → msg bigTS (ID id) ()) [0..n-1]
@@ -37,11 +38,11 @@ instance Arbitrary ClientId where
 	arbitrary = arbitrary >>= return.ID
 
 genMsg ∷ Arbitrary a => Queue a → a → Gen(Msg a)
-genMsg (Queue (ID 0) _ _) m = error $ "No clients, can't make a message"
-genMsg q@(Queue (ID n) (TS sync) p) m = do
-	u ← choose(0,n-1)
+genMsg (Queue _ _ _ []) m = error $ "No clients, can't make a message"
+genMsg q@(Queue (ID n) (TS sync) p connected) m = do
+	u ← choose(0,length connected-1) >>= return . (connected!!)
 	t ← choose(sync+1,sync+3)
-	return $ msg (TS t) (ID u) m
+	return $ msg (TS t) u m
 
 genQueue ∷ Show a => Arbitrary a => Queue a → Gen(Queue a)
 genQueue q = do

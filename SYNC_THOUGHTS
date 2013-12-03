@@ -43,3 +43,22 @@ More correct, hard approach:
 	Every time we apply a message,
 		patch the rest of the messages for that time period.
 			I think this should mostly be moving node addresses around.
+
+# Conclusions
+data Msg a
+	= MSG TimeStamp ClientId Int a
+	| TRACE {traceTime::TimeStamp, lastTrace::Maybe TimeStamp, msgsThisTime::Int}
+
+Introduction message is (TRACE t Nothing n)
+	All other messages are of the form (TRACE t' t n').
+We have enough information to know when we've missed messages.
+Messages from a user are ordered within a timestamp.
+
+## Connections
+Example
+	connect → 0
+	msg 0 a
+	connect → 1
+	msg 1 b
+	connect → 2
+	msg 2 c
