@@ -1,0 +1,84 @@
+# Syncronization Model:
+Messages are released only when we have all information for a chunk of time.
+Idle clients regularly send zero-content messages.
+We assume that all delivered messages are delivered intact.
+Messages might not be delivered.
+	We need to know if we've missed one so that we can request a re-send.
+
+## TRACE Messages
+These tell us
+	how many messages come from a certain client in a certain time chunk.
+	when the last TRACE messages was.
+
+Sending a TRACE message with zero content messages let's us know that a client
+	is keeping up, but isn't doing anything.
+
+When a first client connects, it sends a message of the form (TRACE t Nothing n)
+
+## MSG Messages
+These include
+	the time they were sent
+	the client that sent them
+	an int to order them within a timestamp.
+		In case a client sends multiple messages withing a certain time.
+
+## TODO Handling Conflicting Messages
+Easy, but bad approach: If multiple clients send messages during a time window,
+	reject them all.
+		If this works well enough, then keep it.
+
+More correct, hard approach:
+	Determine if messages can be patched to work with each other.
+	Every time we apply a message,
+		patch the rest of the messages for that time period.
+			I think this should mostly be moving node addresses around.
+
+# TODO Conflicts upon Connection.
+What if two clients connect at the same time?
+What's the connection process outside of this abstraction?
+	A client joins the hangout.
+		the hangouts API alerts all the other clients.
+			they add that client to their ‘Sync.Queue’
+			they somehow send the newbie all the old messages.
+
+How do they send a newbie old messages?
+	If everybody sends, it'll be a shit-storm.
+		How about, everybody just re-sends every messages that they've ever sent.
+			Nope. Some clients may have mutated state and then disconnected.
+		We could nominate a client to send all old messages.
+			What if they disconnect right afterwords? Fuck.
+
+This is getting really messy.
+	We could just use a server? No. Fuck that.
+	Maybe we could build a system that makes sure all messages get delivered?
+		It's definitly doable (TCP), and it would remove a bunch of special cases.
+			but not all, disconnections are still a bitch.
+	We could nominate a master client that handles connections/disconnections.
+		What if he disconnects right when somebody else connects?
+		Meh.
+
+Does the hangouts API give use some sort of unique ID?
+	Yes! ‘Participant.id’. It guarentees that:
+		“A string uniquely identifying this
+		participant in the Hangout. This ID is used
+		to identify a participant throughout the API.”
+
+That solves the connect/disconnect problem.
+
+Now, how do we send old messages to new clients?
+	For now, let's just cluster-fuck it.
+		Everybody keeps track of all messages, and
+			resends them whenever somebody connects.
+		The long-term solution is snapshotting.
+			We can snap-shot at regular intervals.
+				The document state gets pushed to the hangouts shared-state.
+				All clients can delete all the messages leading up to that point.
+					And now the new-client cluster-fuck is small enough to not matter.
+
+# Let's review? How does this simplify things?
+We depend on the hangout API for client IDs and connection/DC info.
+We build another abstraction that guarentees that:
+	No messages are dropped.
+	No messages are delivered in the wrong order.
+	Now, the TRACE messages just needs to say:
+		"I'm done sending messages for this timestamp."

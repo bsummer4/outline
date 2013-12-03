@@ -1,6 +1,9 @@
 -- Syncronization Model:
-	-- Wait until we have a message from every client before we advance.
-	-- Idle clients regularly send noOp messages to avoid stalling.
+	-- Messages are released only when we have all information for a chunk of time.
+		-- all messages f
+	-- Idle clients regularly send TRACE messages.
+	-- If messages are delivered, they are intact.
+	-- Messages may not be delivered, so we need to know if we missed one.
 
 -- In a Queue,
 	-- nextId is the id that the next new client will be assigned, and also
@@ -21,7 +24,10 @@ import Data.List (sort)
 -- Data Types
 newtype TimeStamp = TS Int deriving (Ord,Show,Eq)
 newtype ClientId = ID Int deriving (Ord,Show,Eq)
-data Msg a = Msg { ts::TimeStamp, user::ClientId, payload::a }
+
+data Msg a
+	= MSG { ts::TimeStamp, user::ClientId, payload::a }
+	| TRACE {traceTime::TimeStamp, lastTrace::Maybe TimeStamp, msgsThisTime::Int}
 	deriving (Show,Ord,Eq)
 
 data Queue a = Queue
@@ -42,7 +48,7 @@ qEmpty :: Queue a
 qEmpty = Queue { nextId=ID 0, lastSync=TS(-1), pending=[], connected=[] }
 
 msg :: TimeStamp -> ClientId -> a -> Msg a
-msg = Msg
+msg = MSG
 
 qDisconnect :: Queue a -> ClientId -> Maybe(Queue a)
 qDisconnect (Queue n l p c) id = if c==c' then Nothing else Just q' where
@@ -67,7 +73,7 @@ qMsgs queue ms = mmap qAdvance $ foldl f (Just queue) ms where
 
 -- Internal
 qAddMsg :: Queue a -> Msg a -> Maybe(Queue a)
-qAddMsg (Queue clients sync q c) m@(Msg t id a) =
+qAddMsg (Queue clients sync q c) m@(MSG t id a) =
 	if id<clients && t>sync then Just $ Queue clients sync (m:q) c else Nothing
 
 qAdvance :: Queue a -> (Queue a,[Msg a])
