@@ -1,5 +1,7 @@
+{-# LANGUAGE CPP #-}
+
 module Editor
-	( Editor, mkeditor, apply, stSel, stOL, Operation
+	( Editor, mkeditor, emptyEditor, apply, stSel, stOL, Operation
 		( SelDown, SelLeft, SelUp, SelRight, Select, ReplaceTxt, Delete
 		, Nada, InsBefore, InsAfter, InsAbove, InsBelow
 		, Undo, Copy, Cut, PasteAfter, PasteBefore
@@ -15,9 +17,17 @@ data Editor = State
 	, stUndos :: [(Addr,[Edit])]
 	, stClip :: Maybe Outline
 	}
+#if FAY
+	deriving (Show,Eq)
+#else
+	deriving (Show,Eq,Read,Ord)
+#endif
 
 mkeditor :: Addr -> Outline -> Editor
 mkeditor a o = State a o [] Nothing
+
+emptyEditor :: Editor
+emptyEditor = mkeditor (Addr[]) $ OL (ols "") []
 
 data Operation
 	= SelDown | SelLeft | SelUp | SelRight | Select Addr

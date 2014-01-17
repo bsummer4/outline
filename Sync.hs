@@ -1,15 +1,6 @@
 module Sync where
-	-- ( Queue, Msg, TimeStamp, ClientId
-	-- , msg, epoch, tsInc, qEmpty
-	-- , qConnect, qMsg, qMsgs
-	-- , prop_flushable
-	-- ) where
-
 import Util
 import Data.List (sort)
-
--- Maintain a list of messages from each client.
--- When we get a TRACE message. Produce a chunk of messages.
 
 -- Data Types
 newtype TimeStamp = TS Int deriving (Ord,Show,Eq)

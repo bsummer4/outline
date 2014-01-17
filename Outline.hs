@@ -1,4 +1,5 @@
 {-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE CPP #-}
 
 module Outline
 	( OLStr, ols, unols
@@ -10,10 +11,17 @@ module Outline
 import Prelude
 import Util
 
+#if FAY
 data Addr = Addr [Int] deriving (Eq,Show)
 data OLStr = OLStr String deriving (Eq,Show)
 data Outline = OL OLStr [Outline] deriving (Eq,Show)
 data Lexeme = INDENT | DEDENT | LINE OLStr deriving Show
+#else
+data Addr = Addr [Int] deriving (Eq,Show,Read,Ord)
+data OLStr = OLStr String deriving (Eq,Show,Read,Ord)
+data Outline = OL OLStr [Outline] deriving (Eq,Show,Read,Ord)
+data Lexeme = INDENT | DEDENT | LINE OLStr deriving Show
+#endif
 
 unols :: OLStr → String
 unols (OLStr s) = s
