@@ -7,7 +7,7 @@ import Editor
 import FayRef
 import Sanitize
 
--- FFI ------------------------------------------------------------------------
+-- DOM FFI --------------------------------------------------------------------
 data JS
 data JSDOM
 
@@ -41,6 +41,19 @@ onKeyPress :: (String -> Fay()) -> Fay()
 onKeyPress p = onKeyPress' (p . charCodeToString . keyCode)
 appendChild :: JSDOM -> JSDOM -> Fay()
 appendChild = ffi "((%1).appendChild(%2))"
+
+-- AJAX FFI -------------------------------------------------------------------
+data Req
+ajaxReq :: Fay Req
+ajaxReq = ffi "new XMLHttpRequest()"
+ajaxOpen :: Req -> String -> String -> Bool -> Fay()
+ajaxOpen = ffi "(%1).open(%2,%3,%4)"
+ajaxSend :: Req -> Fay()
+ajaxSend = ffi "(%1).send()"
+ajaxSendStr :: Req -> String -> Fay()
+ajaxSendStr = ffi "(%1).send(%2)"
+ajaxRecv :: Req -> Fay String
+ajaxRecv = ffi "(%1).responseText"
 
 -- DOM ------------------------------------------------------------------------
 data DOM = Node
@@ -175,9 +188,25 @@ buildit :: FayRef Vars -> Fay()
 buildit vars = do
 	Vars (editor,method) <- readFayRef vars
 	gendom(render method vars (stSel editor) (stOL editor)) >>= setPage
+	sendUpdate $ stOL editor
+
+sendUpdate :: Outline -> Fay ()
+sendUpdate ol = do
+	r <- ajaxReq
+	ajaxOpen r "PUT" "/write" True
+	ajaxSendStr r $ olshow ol
+
+getOutline :: Fay Outline
+getOutline = do
+	r <- ajaxReq
+	ajaxOpen r "GET" "/read" False
+	ajaxSend r
+	str <- ajaxRecv r
+	return $ olread str
 
 main :: Fay()
 main = do
-	vars <- newFayRef $ Vars (mkeditor (Addr[]) olexample, ByList)
+	ol <- getOutline
+	vars <- newFayRef $ Vars (mkeditor (Addr[]) ol, ByList)
 	buildit vars
 	setupKeys vars

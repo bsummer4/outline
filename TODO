@@ -23,3 +23,13 @@ TODO Synchronization between clients.
 			Only one client.
 			Input events add to the queue.
 			UI is changed when messages come out of the syncronizer.
+
+TODO Add Client Support.
+	Dump a page with javascript at the top-level url.
+	Make the client upload an outline copy per edit.
+	The client should make a request at ‘/read’ on startup.
+
+TODO Support Outline Normalization and Validation.
+	Accept new documents from /write
+	Parse them into an Outline.
+	‘olshow’ then back into the db.

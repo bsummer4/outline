@@ -1,33 +1,27 @@
 {-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE CPP #-}
 
 module Outline
 	( OLStr, ols, unols
 	, Outline(OL), oltext, olread, olshow, olexample, olget, olwalk
 	, Addr(Addr), addrmap, addrOk, addrBefore, addrAfter, addrParent
-	, addrChild, isChildOf
+	, addrShow, addrChild, isChildOf
 	) where
 
 import Prelude
 import Util
 
-#if FAY
 data Addr = Addr [Int] deriving (Eq,Show)
 data OLStr = OLStr String deriving (Eq,Show)
 data Outline = OL OLStr [Outline] deriving (Eq,Show)
 data Lexeme = INDENT | DEDENT | LINE OLStr deriving Show
-#else
-data Addr = Addr [Int] deriving (Eq,Show,Read,Ord)
-data OLStr = OLStr String deriving (Eq,Show,Read,Ord)
-data Outline = OL OLStr [Outline] deriving (Eq,Show,Read,Ord)
-data Lexeme = INDENT | DEDENT | LINE OLStr deriving Show
-#endif
 
 unols :: OLStr → String
 unols (OLStr s) = s
 
 oltext :: Outline → String
 oltext (OL (OLStr s) _) = s
+
+addrShow (Addr i) = unwords $ map show i
 
 addrOk :: Addr → Outline → Bool
 addrOk a ol = case olget a ol of {Nothing->False; Just _->True}

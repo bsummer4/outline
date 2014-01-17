@@ -897,6 +897,24 @@ Prelude.when = function($p1){
     });
   };
 };
+Prelude.unless = function($p1){
+  return function($p2){
+    return new Fay$$$(function(){
+      var m = $p2;
+      var p = $p1;
+      return Fay$$_(p) ? Fay$$_(Fay$$$_return)(Fay$$unit) : Fay$$_(Fay$$_(Fay$$then)(m))(Fay$$_(Fay$$$_return)(Fay$$unit));
+    });
+  };
+};
+Prelude.forM = function($p1){
+  return function($p2){
+    return new Fay$$$(function(){
+      var fn = $p2;
+      var lst = $p1;
+      return Fay$$_(Fay$$_(Prelude.$36$)(Prelude.sequence))(Fay$$_(Fay$$_(Prelude.map)(fn))(lst));
+    });
+  };
+};
 Prelude.forM_ = function($p1){
   return function($p2){
     return new Fay$$$(function(){
@@ -911,6 +929,15 @@ Prelude.forM_ = function($p1){
         return Fay$$_(Fay$$$_return)(Fay$$unit);
       }
       throw ["unhandled case in forM_",[$p1,$p2]];
+    });
+  };
+};
+Prelude.mapM = function($p1){
+  return function($p2){
+    return new Fay$$$(function(){
+      var lst = $p2;
+      var fn = $p1;
+      return Fay$$_(Fay$$_(Prelude.$36$)(Prelude.sequence))(Fay$$_(Fay$$_(Prelude.map)(fn))(lst));
     });
   };
 };
@@ -938,6 +965,36 @@ Prelude.$61$$60$$60$ = function($p1){
       var f = $p1;
       return Fay$$_(Fay$$_(Fay$$bind)(x))(f);
     });
+  };
+};
+Prelude.$_void = function($p1){
+  return new Fay$$$(function(){
+    var f = $p1;
+    return Fay$$_(Fay$$_(Fay$$then)(f))(Fay$$_(Fay$$$_return)(Fay$$unit));
+  });
+};
+Prelude.$62$$61$$62$ = function($p1){
+  return function($p2){
+    return function($p3){
+      return new Fay$$$(function(){
+        var x = $p3;
+        var g = $p2;
+        var f = $p1;
+        return Fay$$_(Fay$$_(Fay$$bind)(Fay$$_(f)(x)))(g);
+      });
+    };
+  };
+};
+Prelude.$60$$61$$60$ = function($p1){
+  return function($p2){
+    return function($p3){
+      return new Fay$$$(function(){
+        var x = $p3;
+        var f = $p2;
+        var g = $p1;
+        return Fay$$_(Fay$$_(Fay$$bind)(Fay$$_(f)(x)))(g);
+      });
+    };
   };
 };
 Prelude.sequence = function($p1){
@@ -3166,6 +3223,15 @@ Outline.oltext = function($p1){
     throw ["unhandled case in oltext",[$p1]];
   });
 };
+Outline.addrShow = function($p1){
+  return new Fay$$$(function(){
+    if (Fay$$_($p1) instanceof Outline._Addr) {
+      var i = Fay$$_($p1).slot1;
+      return Fay$$_(Fay$$_(Prelude.$36$)(Prelude.unwords))(Fay$$_(Fay$$_(Prelude.map)(Prelude.show))(i));
+    }
+    throw ["unhandled case in addrShow",[$p1]];
+  });
+};
 Outline.addrOk = function($p1){
   return function($p2){
     return new Fay$$$(function(){
@@ -3841,6 +3907,30 @@ Edit.EDT = function(slot1){
     });
   };
 };
+Edit.editShow = function($p1){
+  return new Fay$$$(function(){
+    if (Fay$$_($p1) instanceof Edit._ADD) {
+      var a = Fay$$_($p1).slot1;
+      var o = Fay$$_($p1).slot2;
+      return Fay$$_(Fay$$_(Prelude.$43$$43$)(Fay$$list("ADD ")))(Fay$$_(Fay$$_(Prelude.$43$$43$)(Fay$$_(Outline.addrShow)(a)))(Fay$$_(Fay$$_(Prelude.$43$$43$)(Fay$$list("\n")))(Fay$$_(Outline.olshow)(o))));
+    }
+    if (Fay$$_($p1) instanceof Edit._RPL) {
+      var a = Fay$$_($p1).slot1;
+      var o = Fay$$_($p1).slot2;
+      return Fay$$_(Fay$$_(Prelude.$43$$43$)(Fay$$list("RPL ")))(Fay$$_(Fay$$_(Prelude.$43$$43$)(Fay$$_(Outline.addrShow)(a)))(Fay$$_(Fay$$_(Prelude.$43$$43$)(Fay$$list("\n")))(Fay$$_(Outline.olshow)(o))));
+    }
+    if (Fay$$_($p1) instanceof Edit._DEL) {
+      var a = Fay$$_($p1).slot1;
+      return Fay$$_(Fay$$_(Prelude.$43$$43$)(Fay$$list("DEL ")))(Fay$$_(Outline.addrShow)(a));
+    }
+    if (Fay$$_($p1) instanceof Edit._EDT) {
+      var a = Fay$$_($p1).slot1;
+      var s = Fay$$_($p1).slot2;
+      return Fay$$_(Fay$$_(Prelude.$43$$43$)(Fay$$list("EDT ")))(Fay$$_(Fay$$_(Prelude.$43$$43$)(Fay$$_(Outline.addrShow)(a)))(Fay$$_(Outline.unols)(s)));
+    }
+    throw ["unhandled case in editShow",[$p1]];
+  });
+};
 Edit.edit = function($p1){
   return function($p2){
     return new Fay$$$(function(){
@@ -4288,6 +4378,9 @@ Editor.mkeditor = function($p1){
     });
   };
 };
+Editor.emptyEditor = new Fay$$$(function(){
+  return Fay$$_(Fay$$_(Prelude.$36$)(Fay$$_(Editor.mkeditor)(Fay$$_(Outline.Addr)(null))))(Fay$$_(Fay$$_(Outline.OL)(Fay$$_(Outline.ols)(Fay$$list(""))))(null));
+});
 Editor._SelDown = function SelDown(){
 };
 Editor._SelDown.prototype.instance = "SelDown";
@@ -5331,6 +5424,37 @@ UI.appendChild = function($p1){
     });
   };
 };
+UI.ajaxReq = new Fay$$$(function(){
+  return new Fay$$Monad(Fay$$jsToFay(["user","Req",[]],new XMLHttpRequest()));
+});
+UI.ajaxOpen = function($p1){
+  return function($p2){
+    return function($p3){
+      return function($p4){
+        return new Fay$$$(function(){
+          return new Fay$$Monad(Fay$$jsToFay(["unknown"],(Fay$$fayToJs(["user","Req",[]],$p1)).open(Fay$$fayToJs_string($p2),Fay$$fayToJs_string($p3),Fay$$fayToJs_bool($p4))));
+        });
+      };
+    };
+  };
+};
+UI.ajaxSend = function($p1){
+  return new Fay$$$(function(){
+    return new Fay$$Monad(Fay$$jsToFay(["unknown"],(Fay$$fayToJs(["user","Req",[]],$p1)).send()));
+  });
+};
+UI.ajaxSendStr = function($p1){
+  return function($p2){
+    return new Fay$$$(function(){
+      return new Fay$$Monad(Fay$$jsToFay(["unknown"],(Fay$$fayToJs(["user","Req",[]],$p1)).send(Fay$$fayToJs_string($p2))));
+    });
+  };
+};
+UI.ajaxRecv = function($p1){
+  return new Fay$$$(function(){
+    return new Fay$$Monad(Fay$$jsToFay_string((Fay$$fayToJs(["user","Req",[]],$p1)).responseText));
+  });
+};
 UI._Node = function Node(tag,attrs,text,click,childs){
   this.tag = tag;
   this.attrs = attrs;
@@ -5381,13 +5505,13 @@ UI.dom = function($p1){
   return new Fay$$$(function(){
     var s = $p1;
     return (function(){
-      var Node = new UI._Node();
-      Node.tag = s;
-      Node.attrs = null;
-      Node.text = Prelude.Nothing;
-      Node.click = Prelude.Nothing;
-      Node.childs = null;
-      return Node;
+      var _node = new UI._Node();
+      _node.tag = s;
+      _node.attrs = null;
+      _node.text = Prelude.Nothing;
+      _node.click = Prelude.Nothing;
+      _node.childs = null;
+      return _node;
     })();
   });
 };
@@ -5894,17 +6018,38 @@ UI.buildit = function($p1){
         if (Fay$$listLen(Fay$$_(Fay$$_($p1).slot1),2)) {
           var editor = Fay$$index(0,Fay$$_(Fay$$_($p1).slot1));
           var method = Fay$$index(1,Fay$$_(Fay$$_($p1).slot1));
-          return Fay$$_(Fay$$_(Fay$$bind)(Fay$$_(UI.gendom)(Fay$$_(Fay$$_(Fay$$_(Fay$$_(UI.render)(method))(vars))(Fay$$_(Editor.stSel)(editor)))(Fay$$_(Editor.stOL)(editor)))))(UI.setPage);
+          return Fay$$_(Fay$$_(Fay$$then)(Fay$$_(Fay$$_(Fay$$bind)(Fay$$_(UI.gendom)(Fay$$_(Fay$$_(Fay$$_(Fay$$_(UI.render)(method))(vars))(Fay$$_(Editor.stSel)(editor)))(Fay$$_(Editor.stOL)(editor)))))(UI.setPage)))(Fay$$_(Fay$$_(Prelude.$36$)(UI.sendUpdate))(Fay$$_(Editor.stOL)(editor)));
         }
       }
       throw ["unhandled case",$p1];
     });
   });
 };
+UI.sendUpdate = function($p1){
+  return new Fay$$$(function(){
+    var ol = $p1;
+    return Fay$$_(Fay$$_(Fay$$bind)(UI.ajaxReq))(function($p1){
+      var r = $p1;
+      return Fay$$_(Fay$$_(Fay$$then)(Fay$$_(Fay$$_(Fay$$_(Fay$$_(UI.ajaxOpen)(r))(Fay$$list("PUT")))(Fay$$list("/write")))(true)))(Fay$$_(Fay$$_(Prelude.$36$)(Fay$$_(UI.ajaxSendStr)(r)))(Fay$$_(Outline.olshow)(ol)));
+    });
+  });
+};
+UI.getOutline = new Fay$$$(function(){
+  return Fay$$_(Fay$$_(Fay$$bind)(UI.ajaxReq))(function($p1){
+    var r = $p1;
+    return Fay$$_(Fay$$_(Fay$$then)(Fay$$_(Fay$$_(Fay$$_(Fay$$_(UI.ajaxOpen)(r))(Fay$$list("GET")))(Fay$$list("/read")))(false)))(Fay$$_(Fay$$_(Fay$$then)(Fay$$_(UI.ajaxSend)(r)))(Fay$$_(Fay$$_(Fay$$bind)(Fay$$_(UI.ajaxRecv)(r)))(function($p1){
+      var str = $p1;
+      return Fay$$_(Fay$$_(Prelude.$36$)(Fay$$$_return))(Fay$$_(Outline.olread)(str));
+    })));
+  });
+});
 UI.main = new Fay$$$(function(){
-  return Fay$$_(Fay$$_(Fay$$bind)(Fay$$_(Fay$$_(Prelude.$36$)(FayRef.newFayRef))(Fay$$_(UI.Vars)(Fay$$list([Fay$$_(Fay$$_(Editor.mkeditor)(Fay$$_(Outline.Addr)(null)))(Outline.olexample),UI.ByList])))))(function($p1){
-    var vars = $p1;
-    return Fay$$_(Fay$$_(Fay$$then)(Fay$$_(UI.buildit)(vars)))(Fay$$_(UI.setupKeys)(vars));
+  return Fay$$_(Fay$$_(Fay$$bind)(UI.getOutline))(function($p1){
+    var ol = $p1;
+    return Fay$$_(Fay$$_(Fay$$bind)(Fay$$_(Fay$$_(Prelude.$36$)(FayRef.newFayRef))(Fay$$_(UI.Vars)(Fay$$list([Fay$$_(Fay$$_(Editor.mkeditor)(Fay$$_(Outline.Addr)(null)))(ol),UI.ByList])))))(function($p1){
+      var vars = $p1;
+      return Fay$$_(Fay$$_(Fay$$then)(Fay$$_(UI.buildit)(vars)))(Fay$$_(UI.setupKeys)(vars));
+    });
   });
 });
 Fay$$objConcat(Fay$$fayToJsHash,{"Node": function(type,argTypes,_obj){

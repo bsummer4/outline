@@ -19,9 +19,10 @@ import Editor
 import GHC.Exts (fromString)
 
 main ∷ IO ()
-main = quickHttpServe $ ifTop dumpDB <|> route [("write/", setDB)] where
-	dumpDB = do
-		modifyResponse(setContentType "text/plain") >> sendFile db
-		writeBS $ fromString $ show $ emptyEditor
-	setDB = getRequestBody >>= liftIO∘(LBS.writeFile db) >> writeBS "File written"
+main = quickHttpServe $ ifTop sendClient <|> r where
+	r = route [("read/", sendDB), ("write/", recvDB), ("UI.js",sendJS)]
+	sendDB = modifyResponse(setContentType "text/plain") >> sendFile db
+	recvDB = getRequestBody >>= liftIO∘(LBS.writeFile db) >> writeBS "File written"
+	sendClient = modifyResponse(setContentType "text/html") >> sendFile "test.html"
+	sendJS = modifyResponse(setContentType "text/javascript") >> sendFile "UI.js"
 	db = "./db"

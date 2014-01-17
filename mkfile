@@ -1,7 +1,12 @@
 fayflags = --library --Wall --package fay-ref -p -O --sourcemap
 
 all:V: o.Sanitize UI.js
-clean:V:
+
+tidy:V:
+	echo -n >log/access.log
+	echo -n >log/error.log
+
+clean:V: tidy
 	rm -f *.grin *.core *.o o.* *.hi *.js *.mjs *.map
 
 %.js: %.hs

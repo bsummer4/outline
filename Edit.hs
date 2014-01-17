@@ -1,5 +1,4 @@
 {-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE CPP #-}
 
 -- This is our core set of editing operations. All operations are implemented in
 -- terms of these. To enable undo/redo, all operations are reversible. The
@@ -24,11 +23,12 @@ data Edit
 	| DEL Addr
 	| EDT Addr OLStr
 --	| MOV Addr Addr
-#if FAY
 	deriving (Show,Eq)
-#else
-	deriving (Show,Eq,Read,Ord)
-#endif
+
+editShow (ADD a o) = "ADD " ++ addrShow a ++ "\n" ++ olshow o
+editShow (RPL a o) = "RPL " ++ addrShow a ++ "\n" ++ olshow o
+editShow (DEL a) = "DEL " ++ addrShow a
+editShow (EDT a s) = "EDT " ++ addrShow a ++ unols s
 
 edit :: Outline → Edit → Maybe (Outline,Edit)
 edit o e = if opOkay o e then Just(mutate o e,undo o e) else Nothing
