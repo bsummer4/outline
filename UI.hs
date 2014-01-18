@@ -184,6 +184,9 @@ setupKeys vars = onKeyPress kpress >> onKeyDown kdown where
 	kdown 40 = kpress "j"
 	kdown _ = return()
 
+editingWhichFile :: Fay String
+editingWhichFile = ffi "editingWhichFile"
+
 buildit :: FayRef Vars -> Fay()
 buildit vars = do
 	Vars (editor,method) <- readFayRef vars
@@ -192,14 +195,16 @@ buildit vars = do
 
 sendUpdate :: Outline -> Fay ()
 sendUpdate ol = do
+	filename <- editingWhichFile
 	r <- ajaxReq
-	ajaxOpen r "PUT" "/write" True
+	ajaxOpen r "PUT" ("/__edit__/" ++ filename) True
 	ajaxSendStr r $ olshow ol
 
 getOutline :: Fay Outline
 getOutline = do
+	filename <- editingWhichFile
 	r <- ajaxReq
-	ajaxOpen r "GET" "/read" False
+	ajaxOpen r "GET" ("/__edit__/" ++ filename) False
 	ajaxSend r
 	str <- ajaxRecv r
 	return $ olread str

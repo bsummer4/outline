@@ -6010,6 +6010,9 @@ UI.setupKeys = function($p1){
     })();
   });
 };
+UI.editingWhichFile = new Fay$$$(function(){
+  return new Fay$$Monad(Fay$$jsToFay_string(editingWhichFile));
+});
 UI.buildit = function($p1){
   return new Fay$$$(function(){
     var vars = $p1;
@@ -6028,19 +6031,25 @@ UI.buildit = function($p1){
 UI.sendUpdate = function($p1){
   return new Fay$$$(function(){
     var ol = $p1;
-    return Fay$$_(Fay$$_(Fay$$bind)(UI.ajaxReq))(function($p1){
-      var r = $p1;
-      return Fay$$_(Fay$$_(Fay$$then)(Fay$$_(Fay$$_(Fay$$_(Fay$$_(UI.ajaxOpen)(r))(Fay$$list("PUT")))(Fay$$list("/write")))(true)))(Fay$$_(Fay$$_(Prelude.$36$)(Fay$$_(UI.ajaxSendStr)(r)))(Fay$$_(Outline.olshow)(ol)));
+    return Fay$$_(Fay$$_(Fay$$bind)(UI.editingWhichFile))(function($p1){
+      var filename = $p1;
+      return Fay$$_(Fay$$_(Fay$$bind)(UI.ajaxReq))(function($p1){
+        var r = $p1;
+        return Fay$$_(Fay$$_(Fay$$then)(Fay$$_(Fay$$_(Fay$$_(Fay$$_(UI.ajaxOpen)(r))(Fay$$list("PUT")))(Fay$$_(Fay$$_(Prelude.$43$$43$)(Fay$$list("/__edit__/")))(filename)))(true)))(Fay$$_(Fay$$_(Prelude.$36$)(Fay$$_(UI.ajaxSendStr)(r)))(Fay$$_(Outline.olshow)(ol)));
+      });
     });
   });
 };
 UI.getOutline = new Fay$$$(function(){
-  return Fay$$_(Fay$$_(Fay$$bind)(UI.ajaxReq))(function($p1){
-    var r = $p1;
-    return Fay$$_(Fay$$_(Fay$$then)(Fay$$_(Fay$$_(Fay$$_(Fay$$_(UI.ajaxOpen)(r))(Fay$$list("GET")))(Fay$$list("/read")))(false)))(Fay$$_(Fay$$_(Fay$$then)(Fay$$_(UI.ajaxSend)(r)))(Fay$$_(Fay$$_(Fay$$bind)(Fay$$_(UI.ajaxRecv)(r)))(function($p1){
-      var str = $p1;
-      return Fay$$_(Fay$$_(Prelude.$36$)(Fay$$$_return))(Fay$$_(Outline.olread)(str));
-    })));
+  return Fay$$_(Fay$$_(Fay$$bind)(UI.editingWhichFile))(function($p1){
+    var filename = $p1;
+    return Fay$$_(Fay$$_(Fay$$bind)(UI.ajaxReq))(function($p1){
+      var r = $p1;
+      return Fay$$_(Fay$$_(Fay$$then)(Fay$$_(Fay$$_(Fay$$_(Fay$$_(UI.ajaxOpen)(r))(Fay$$list("GET")))(Fay$$_(Fay$$_(Prelude.$43$$43$)(Fay$$list("/__edit__/")))(filename)))(false)))(Fay$$_(Fay$$_(Fay$$then)(Fay$$_(UI.ajaxSend)(r)))(Fay$$_(Fay$$_(Fay$$bind)(Fay$$_(UI.ajaxRecv)(r)))(function($p1){
+        var str = $p1;
+        return Fay$$_(Fay$$_(Prelude.$36$)(Fay$$$_return))(Fay$$_(Outline.olread)(str));
+      })));
+    });
   });
 });
 UI.main = new Fay$$$(function(){

@@ -1,6 +1,8 @@
+doc/*
 tmp/
 *.js
 *.swp
 *.hi
 *.o
 o.*
+*.map
