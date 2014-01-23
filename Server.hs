@@ -14,6 +14,7 @@ import Prelude.Unicode
 import Editor
 import GHC.Exts (fromString)
 import qualified Data.String.Utils as StrUtils
+import System.Directory (doesFileExist)
 
 main ∷ IO()
 main = quickHttpServe $ ifTop (client(Doc "scratch")) <|> route (
@@ -49,5 +50,9 @@ restAPI d = mkRestAPI d $
 
 recvMsg = writeBS∘pack∘toPath
 delDoc = writeBS∘pack∘toPath
-recvDoc p = getRequestBody >>= liftIO∘(LBS.writeFile $ toPath p)
-sendDoc p = modifyResponse(setContentType "text/plain") >> sendFile(toPath p)
+recvDoc d = getRequestBody >>= liftIO∘(LBS.writeFile $ toPath d)
+sendDoc d = do
+	let path = toPath d
+	modifyResponse(setContentType "text/plain")
+	e <- liftIO(doesFileExist path)
+	if e then sendFile path else writeBS "#\n"
