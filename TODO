@@ -6,6 +6,10 @@ TODO Stop using ‘prompt()’.
 	Use ‘<div><input/></div>’.
 	Allow multi-line inputs and process then with Sanitize.
 
+TODO In order to support multi-line input, I need to use a textbox.
+	I should mimick my current approach that uses ‘prompt()’
+	I guess the first step would be to replace ‘prompt()’ with
+
 TODO Support multiple cursors in Editor.hs.
 TODO Add more convenient movement operations.
 	Move the cursor visually up/down, ignoring nesting.
