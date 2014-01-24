@@ -1,6 +1,7 @@
 # Missing Features
 TODO Not being able to work with the top-level node sucks.
 	Investigate how much trouble it would be to allow multiple top-level nodes.
+TODO Merge Sanitize.hs and Outline.hs
 
 TODO Stop using ‘prompt()’.
 	Use ‘<div><input/></div>’.

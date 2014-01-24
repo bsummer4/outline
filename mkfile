@@ -1,6 +1,6 @@
 fayflags = --library --Wall --package fay-ref -p -O --sourcemap
 
-all:V: o.Sanitize UI.js
+all:V: o.unexpand2 UI.js
 
 tidy:V:
 	echo -n >log/access.log
@@ -13,6 +13,7 @@ clean:V: tidy
 	fay $fayflags $stem.hs -o $stem.js
 
 o.%: %.hs
-	ghc -Wall -XCPP -hidir tmp -odir tmp -main-is $stem.main $stem.hs -o o.$stem
+	ghc -Wall -hidir tmp -odir tmp $stem.hs -o o.$stem
 
+o.unexpand2: Sanitize.hs
 UI.js: Editor.hs Outline.hs Sanitize.hs UI.hs Util.hs Edit.hs
