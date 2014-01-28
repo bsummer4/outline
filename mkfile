@@ -13,7 +13,7 @@ clean:V: tidy
 	fay $fayflags $stem.hs -o $stem.js
 
 o.%: %.hs
-	ghc -Wall -hidir tmp -odir tmp $stem.hs -o o.$stem
+	ghc -O2 -Wall -hidir tmp -odir tmp $stem.hs -o o.$stem
 
 o.unexpand2: Sanitize.hs
 UI.js: Editor.hs Outline.hs Sanitize.hs UI.hs Util.hs Edit.hs

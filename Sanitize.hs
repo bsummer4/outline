@@ -39,18 +39,26 @@ unSpace :: String -> (Int,String)
 unSpace l = cs 0 l where
 	cs n (' ':s) = cs (1+n) s
 	cs n ('\t':s) = cs (tabw$8+n) s
+	cs _ "" = (0,"")
 	cs n s = (n,trimEnd s)
 	tabw n = 8 * (n `div` 8)
 
+-- Remove blank lines from the beginning and end of the file.
+fuckit :: [Lex] -> [Lex]
+fuckit = reverse . front . reverse . front where
+	front (LINE "":ts) = front ts
+	front ts = ts
+
 vblanks :: Vertical -> [Lex] -> [Lex]
-vblanks NONE ll = filter p ll where p x = case x of {LINE ""->False; _->True}
-vblanks ONE [] = []
-vblanks ONE (LINE "":LINE "":ll) = vblanks ONE (LINE "":ll)
-vblanks ONE (l:ll) = l:vblanks ONE ll
-vblanks KEEP ll = ll
-vblanks AUTO lexs = prettyBlanks $ vblanks NONE lexs where
+vblanks v toks = f v $ fuckit toks where
+	f NONE ll = filter p ll where p x = case x of {LINE ""->False; _->True}
+	f ONE [] = []
+	f ONE (LINE "":LINE "":ll) = vblanks ONE (LINE "":ll)
+	f ONE (l:ll) = l:vblanks ONE ll
+	f KEEP ll = ll
+	f AUTO lexs = prettyBlanks $ vblanks NONE lexs
 	prettyBlanks :: [Lex] -> [Lex]
-	prettyBlanks ll = reverse $ snd $ foldl r (0,[]) ll where
+	prettyBlanks ll = reverse $ snd $ foldl r (0,[]) ll
 	r :: (Int,[Lex]) -> Lex -> (Int,[Lex])
 	r (n,a) l@INDENT = (n+1,l:a)
 	r (1,a) l@DEDENT = (0,l:LINE "":a)
