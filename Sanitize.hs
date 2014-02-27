@@ -18,6 +18,7 @@ tolex :: String -> [Lex]
 tolex = reverse . snd . foldl lexLine ([0],[]) . map unSpace . lines where
 	lexLine :: ([Int],[Lex]) -> (Int,String) -> ([Int],[Lex])
 	lexLine ([],acc) (n,l) = ([n], LINE l:acc)
+	lexLine (ds,acc) (0,"") = (ds, LINE "":acc)
 	lexLine (d:depths,acc) (n,l) = case compare n d of
 		GT -> (n:d:depths, LINE l:INDENT:acc)
 		LT -> lexLine (depths, DEDENT:acc) (n,l)

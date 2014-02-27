@@ -1,4 +1,5 @@
 # Missing Features
+TODO Add support for headers.
 TODO Not being able to work with the top-level node sucks.
 	Investigate how much trouble it would be to allow multiple top-level nodes.
 TODO Merge Sanitize.hs and Outline.hs
