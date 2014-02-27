@@ -15,9 +15,17 @@ import Editor
 import GHC.Exts (fromString)
 import qualified Data.String.Utils as StrUtils
 import System.Directory (doesFileExist)
+import Data.UnixTime (getUnixTime, utSeconds)
+import Foreign.C.Types
+
+io = liftIO
+
+topurl = do
+	(CTime utime) ← (io getUnixTime) >>= return∘utSeconds
+	redirect $ pack $ "/t_" ++ show utime
 
 main ∷ IO()
-main = quickHttpServe $ ifTop (client(Doc "scratch")) <|> route (
+main = quickHttpServe $ ifTop topurl <|> route (
 	[ ("__edit__/:editparam", getParam "editparam" >>= restAPI∘mkDoc)
 	, ("__edit__/", (restAPI∘mkDoc) Nothing)
 	, ("UI.js", sendJS)
