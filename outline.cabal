@@ -1,0 +1,13 @@
+name: outline
+version: 0.1.0.0
+author: Benjamin Summers
+maintainer: benjaminsummers1987@gmail.com
+build-type: Simple
+cabal-version: >=1.10
+
+executable outline
+    default-language: Haskell2010
+    main-is: Server.hs
+    build-depends:
+        base, snap, bytestring, MissingH, base-unicode-symbols, unix-time,
+        QuickCheck, directory, transformers, snap-server, snap-core
